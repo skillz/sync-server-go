@@ -1,0 +1,458 @@
+// //
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package server
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"github.com/aaron-skillz/sync-server-go/rtapi"
+	"sync"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+
+	"net"
+
+	"github.com/gofrs/uuid"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/gorilla/websocket"
+	"go.uber.org/atomic"
+	"go.uber.org/zap"
+)
+
+var ErrSessionQueueFull = errors.New("session outgoing queue full")
+
+type sessionWS struct {
+	sync.Mutex
+	logger     *zap.Logger
+	config     Config
+	id         uuid.UUID
+	format     SessionFormat
+	userID     uuid.UUID
+	username   *atomic.String
+	vars       map[string]string
+	expiry     int64
+	clientIP   string
+	clientPort string
+
+	ctx         context.Context
+	ctxCancelFn context.CancelFunc
+
+	jsonpbMarshaler    *jsonpb.Marshaler
+	jsonpbUnmarshaler  *jsonpb.Unmarshaler
+	wsMessageType      int
+	pingPeriodDuration time.Duration
+	pongWaitDuration   time.Duration
+	writeWaitDuration  time.Duration
+
+	sessionRegistry SessionRegistry
+	matchmaker      Matchmaker
+	tracker         Tracker
+	pipeline        *Pipeline
+	runtime         *Runtime
+
+	stopped                bool
+	conn                   *websocket.Conn
+	receivedMessageCounter int
+	pingTimer              *time.Timer
+	pingTimerCAS           *atomic.Uint32
+	outgoingCh             chan []byte
+}
+
+func NewSessionWS(logger *zap.Logger, config Config, format SessionFormat, userID uuid.UUID, username string, vars map[string]string, expiry int64, clientIP string, clientPort string, jsonpbMarshaler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, conn *websocket.Conn, sessionRegistry SessionRegistry, matchmaker Matchmaker, tracker Tracker, pipeline *Pipeline, runtime *Runtime) Session {
+	sessionID := uuid.Must(uuid.NewV4())
+	sessionLogger := logger.With(zap.String("uid", userID.String()), zap.String("sid", sessionID.String()))
+
+	sessionLogger.Info("New WebSocket session connected", zap.Uint8("format", uint8(format)))
+
+	ctx, ctxCancelFn := context.WithCancel(context.Background())
+
+	wsMessageType := websocket.TextMessage
+	if format == SessionFormatProtobuf {
+		wsMessageType = websocket.BinaryMessage
+	}
+
+	return &sessionWS{
+		logger:     sessionLogger,
+		config:     config,
+		id:         sessionID,
+		format:     format,
+		userID:     userID,
+		username:   atomic.NewString(username),
+		vars:       vars,
+		expiry:     expiry,
+		clientIP:   clientIP,
+		clientPort: clientPort,
+
+		ctx:         ctx,
+		ctxCancelFn: ctxCancelFn,
+
+		jsonpbMarshaler:    jsonpbMarshaler,
+		jsonpbUnmarshaler:  jsonpbUnmarshaler,
+		wsMessageType:      wsMessageType,
+		pingPeriodDuration: time.Duration(config.GetSocket().PingPeriodMs) * time.Millisecond,
+		pongWaitDuration:   time.Duration(config.GetSocket().PongWaitMs) * time.Millisecond,
+		writeWaitDuration:  time.Duration(config.GetSocket().WriteWaitMs) * time.Millisecond,
+
+		sessionRegistry: sessionRegistry,
+		matchmaker:      matchmaker,
+		tracker:         tracker,
+		pipeline:        pipeline,
+		runtime:         runtime,
+
+		stopped:                false,
+		conn:                   conn,
+		receivedMessageCounter: config.GetSocket().PingBackoffThreshold,
+		pingTimer:              time.NewTimer(time.Duration(config.GetSocket().PingPeriodMs) * time.Millisecond),
+		pingTimerCAS:           atomic.NewUint32(1),
+		outgoingCh:             make(chan []byte, config.GetSocket().OutgoingQueueSize),
+	}
+}
+
+func (s *sessionWS) Logger() *zap.Logger {
+	return s.logger
+}
+
+func (s *sessionWS) ID() uuid.UUID {
+	return s.id
+}
+
+func (s *sessionWS) UserID() uuid.UUID {
+	return s.userID
+}
+
+func (s *sessionWS) ClientIP() string {
+	return s.clientIP
+}
+
+func (s *sessionWS) ClientPort() string {
+	return s.clientPort
+}
+
+func (s *sessionWS) Context() context.Context {
+	return s.ctx
+}
+
+func (s *sessionWS) Username() string {
+	return s.username.Load()
+}
+
+func (s *sessionWS) SetUsername(username string) {
+	s.username.Store(username)
+}
+
+func (s *sessionWS) Vars() map[string]string {
+	return s.vars
+}
+
+func (s *sessionWS) Expiry() int64 {
+	return s.expiry
+}
+
+func (s *sessionWS) Consume() {
+	// Fire an event for session start.
+	if fn := s.runtime.EventSessionStart(); fn != nil {
+		fn(s.userID.String(), s.username.Load(), s.vars, s.expiry, s.id.String(), s.clientIP, s.clientPort, time.Now().UTC().Unix())
+	}
+
+	s.conn.SetReadLimit(s.config.GetSocket().MaxMessageSizeBytes)
+	if err := s.conn.SetReadDeadline(time.Now().Add(s.pongWaitDuration)); err != nil {
+		s.logger.Warn("Failed to set initial read deadline", zap.Error(err))
+		s.Close("failed to set initial read deadline")
+		return
+	}
+	s.conn.SetPongHandler(func(string) error {
+		s.maybeResetPingTimer()
+		return nil
+	})
+
+	// Start a routine to process outbound messages.
+	go s.processOutgoing()
+
+	var reason string
+
+IncomingLoop:
+	for {
+		messageType, data, err := s.conn.ReadMessage()
+		if err != nil {
+			// Ignore "normal" WebSocket errors.
+			if !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
+				// Ignore underlying connection being shut down while read is waiting for data.
+				if e, ok := err.(*net.OpError); !ok || e.Err.Error() != "use of closed network connection" {
+					s.logger.Debug("Error reading message from client", zap.Error(err))
+					reason = err.Error()
+				}
+			}
+			break
+		}
+		if messageType != s.wsMessageType {
+			// Expected text but received binary, or expected binary but received text.
+			// Disconnect client if it attempts to use this kind of mixed protocol mode.
+			s.logger.Debug("Received unexpected WebSocket message type", zap.Int("expected", s.wsMessageType), zap.Int("actual", messageType))
+			reason = "received unexpected WebSocket message type"
+			break
+		}
+
+		s.receivedMessageCounter--
+		if s.receivedMessageCounter <= 0 {
+			s.receivedMessageCounter = s.config.GetSocket().PingBackoffThreshold
+			if !s.maybeResetPingTimer() {
+				// Problems resetting the ping timer indicate an error so we need to close the loop.
+				break
+			}
+		}
+
+		request := &rtapi.Envelope{}
+		switch s.format {
+		case SessionFormatProtobuf:
+			err = proto.Unmarshal(data, request)
+		case SessionFormatJson:
+			fallthrough
+		default:
+			err = s.jsonpbUnmarshaler.Unmarshal(bytes.NewReader(data), request)
+		}
+		if err != nil {
+			// If the payload is malformed the client is incompatible or misbehaving, either way disconnect it now.
+			s.logger.Warn("Received malformed payload", zap.Binary("data", data))
+			reason = "received malformed payload"
+			break
+		}
+
+		switch request.Cid {
+		case "":
+			if !s.pipeline.ProcessRequest(s.logger, s, request) {
+				reason = "error processing message"
+				break IncomingLoop
+			}
+		default:
+			requestLogger := s.logger.With(zap.String("cid", request.Cid))
+			if !s.pipeline.ProcessRequest(requestLogger, s, request) {
+				reason = "error processing message"
+				break IncomingLoop
+			}
+		}
+	}
+
+	s.Close(reason)
+}
+
+func (s *sessionWS) maybeResetPingTimer() bool {
+	// If there's already a reset in progress there's no need to wait.
+	if !s.pingTimerCAS.CAS(1, 0) {
+		return true
+	}
+	defer s.pingTimerCAS.CAS(0, 1)
+
+	s.Lock()
+	if s.stopped {
+		s.Unlock()
+		return false
+	}
+	// CAS ensures concurrency is not a problem here.
+	if !s.pingTimer.Stop() {
+		select {
+		case <-s.pingTimer.C:
+		default:
+		}
+	}
+	s.pingTimer.Reset(s.pingPeriodDuration)
+	err := s.conn.SetReadDeadline(time.Now().Add(s.pongWaitDuration))
+	s.Unlock()
+	if err != nil {
+		s.logger.Warn("Failed to set read deadline", zap.Error(err))
+		s.Close("failed to set read deadline")
+		return false
+	}
+	return true
+}
+
+func (s *sessionWS) processOutgoing() {
+	var reason string
+
+OutgoingLoop:
+	for {
+		select {
+		case <-s.ctx.Done():
+			// Session is closing, close the outgoing process routine.
+			break OutgoingLoop
+		case <-s.pingTimer.C:
+			// Periodically send pings.
+			if msg, ok := s.pingNow(); !ok {
+				// If ping fails the session will be stopped, clean up the loop.
+				reason = msg
+				break OutgoingLoop
+			}
+		case payload := <-s.outgoingCh:
+			s.Lock()
+			if s.stopped {
+				// The connection may have stopped between the payload being queued on the outgoing channel and reaching here.
+				// If that's the case then abort outgoing processing at this point and exit.
+				s.Unlock()
+				break OutgoingLoop
+			}
+			// Process the outgoing message queue.
+			if err := s.conn.SetWriteDeadline(time.Now().Add(s.writeWaitDuration)); err != nil {
+				s.Unlock()
+				s.logger.Warn("Failed to set write deadline", zap.Error(err))
+				reason = err.Error()
+				break OutgoingLoop
+			}
+			if err := s.conn.WriteMessage(s.wsMessageType, payload); err != nil {
+				s.Unlock()
+				s.logger.Warn("Could not write message", zap.Error(err))
+				reason = err.Error()
+				break OutgoingLoop
+			}
+			s.Unlock()
+		}
+	}
+
+	s.Close(reason)
+}
+
+func (s *sessionWS) pingNow() (string, bool) {
+	s.Lock()
+	if s.stopped {
+		s.Unlock()
+		return "", false
+	}
+	if err := s.conn.SetWriteDeadline(time.Now().Add(s.writeWaitDuration)); err != nil {
+		s.Unlock()
+		s.logger.Warn("Could not set write deadline to ping", zap.Error(err))
+		return err.Error(), false
+	}
+	err := s.conn.WriteMessage(websocket.PingMessage, []byte{})
+	s.Unlock()
+	if err != nil {
+		s.logger.Warn("Could not send ping", zap.Error(err))
+		return err.Error(), false
+	}
+
+	return "", true
+}
+
+func (s *sessionWS) Format() SessionFormat {
+	return s.format
+}
+
+func (s *sessionWS) Send(envelope *rtapi.Envelope, reliable bool) error {
+	var payload []byte
+	var err error
+	switch s.format {
+	case SessionFormatProtobuf:
+		payload, err = proto.Marshal(envelope)
+	case SessionFormatJson:
+		fallthrough
+	default:
+		var buf bytes.Buffer
+		if err = s.jsonpbMarshaler.Marshal(&buf, envelope); err == nil {
+			payload = buf.Bytes()
+		}
+	}
+	if err != nil {
+		s.logger.Warn("Could not marshal envelope", zap.Error(err))
+		return err
+	}
+
+	if s.logger.Core().Enabled(zap.DebugLevel) {
+		switch envelope.Message.(type) {
+		case *rtapi.Envelope_Error:
+			s.logger.Debug("Sending error message", zap.Binary("payload", payload))
+		default:
+			s.logger.Debug(fmt.Sprintf("Sending %T message", envelope.Message), zap.Any("envelope", envelope))
+		}
+	}
+
+	return s.SendBytes(payload, reliable)
+}
+
+func (s *sessionWS) SendBytes(payload []byte, reliable bool) error {
+	s.Lock()
+	if s.stopped {
+		s.Unlock()
+		return nil
+	}
+
+	// Attempt to queue messages and observe failures.
+	select {
+	case s.outgoingCh <- payload:
+		s.Unlock()
+		return nil
+	default:
+		// The outgoing queue is full, likely because the remote client can't keep up.
+		// Terminate the connection immediately because the only alternative that doesn't block the server is
+		// to start dropping messages, which might cause unexpected behaviour.
+		s.Unlock()
+		s.logger.Warn("Could not write message, session outgoing queue full")
+		s.Close(ErrSessionQueueFull.Error())
+		return ErrSessionQueueFull
+	}
+}
+
+func (s *sessionWS) Close(reason string) {
+	s.Lock()
+	if s.stopped {
+		s.Unlock()
+		return
+	}
+	s.stopped = true
+	s.Unlock()
+
+	// Cancel any ongoing operations tied to this session.
+	s.ctxCancelFn()
+
+	if s.logger.Core().Enabled(zap.DebugLevel) {
+		s.logger.Info("Cleaning up closed client connection")
+	}
+
+	// When connection close originates internally in the session, ensure cleanup of external resources and references.
+	if err := s.matchmaker.RemoveAll(s.id); err != nil {
+		s.logger.Warn("Failed to remove all matchmaking tickets", zap.Error(err))
+	}
+	if s.logger.Core().Enabled(zap.DebugLevel) {
+		s.logger.Info("Cleaned up closed connection matchmaker")
+	}
+	s.tracker.UntrackAll(s.id)
+	if s.logger.Core().Enabled(zap.DebugLevel) {
+		s.logger.Info("Cleaned up closed connection tracker")
+	}
+	s.sessionRegistry.Remove(s.id)
+	if s.logger.Core().Enabled(zap.DebugLevel) {
+		s.logger.Info("Cleaned up closed connection session registry")
+	}
+
+	// Clean up internals.
+	s.pingTimer.Stop()
+	close(s.outgoingCh)
+
+	// Send close message.
+	if err := s.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(s.writeWaitDuration)); err != nil {
+		// This may not be possible if the socket was already fully closed by an error.
+		s.logger.Debug("Could not send close message", zap.Error(err))
+	}
+	// Close WebSocket.
+	if err := s.conn.Close(); err != nil {
+		s.logger.Debug("Could not close", zap.Error(err))
+	}
+
+	s.logger.Info("Closed client connection")
+
+	// Fire an event for session end.
+	if fn := s.runtime.EventSessionEnd(); fn != nil {
+		fn(s.userID.String(), s.username.Load(), s.vars, s.expiry, s.id.String(), s.clientIP, s.clientPort, time.Now().UTC().Unix(), reason)
+	}
+}
