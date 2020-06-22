@@ -28,21 +28,21 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev git && \
     git config --global advice.detachedHead false && \
-    git clone --quiet --no-checkout https://github.com/heroiclabs/nakama /go/build/nakama
+    git clone --quiet --no-checkout https://github.com/aaron-skillz/sync-server-go /go/build/nakama
 
 WORKDIR /go/build/nakama
 RUN git checkout --quiet "$commit" && \
-    go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
+    go build -o /go/build-out/nakama -trimpath -mod=mod -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
 
 FROM debian:buster-slim
 
-MAINTAINER Heroic Labs <support@heroiclabs.com>
+#MAINTAINER Heroic Labs <support@heroiclabs.com>
 
 ARG version
 
 LABEL version=$version
 LABEL variant=nakama
-LABEL description="Distributed server for social and realtime games and apps."
+LABEL description="Distributed server realtime games and apps."
 
 RUN mkdir -p /nakama/data/modules && \
     apt-get update && \
@@ -53,7 +53,7 @@ RUN mkdir -p /nakama/data/modules && \
 
 WORKDIR /nakama/
 COPY --from=builder "/go/build-out/nakama" /nakama/
-EXPOSE 7349 7350 7351
+EXPOSE 7349 7350
 
 ENTRYPOINT ["tini", "--", "/nakama/nakama"]
 

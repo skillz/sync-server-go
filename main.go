@@ -231,10 +231,11 @@ func dbConnect(multiLogger *zap.Logger, config server.Config) (*sql.DB, string) 
 		parsedURL.Path = "/nakama"
 	}
 
-	multiLogger.Debug("Complete database connection URL", zap.String("raw_url", parsedURL.String()))
+	//multiLogger.Debug("Complete database connection URL", zap.String("raw_url", parsedURL.String()))
 	//db, err := sql.Open("pgx", parsedURL.String())
 	//db, err := sql.Open("ramsql", "nakama")
 	db, err := sql.Open("sqlite3", "./cache.db")
+	multiLogger.Debug("Connected to SQLite DB")
 
 	if err != nil {
 		multiLogger.Fatal("Error connecting to database", zap.Error(err))
