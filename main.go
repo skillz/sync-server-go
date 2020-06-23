@@ -109,8 +109,10 @@ func main() {
 	startupLogger.Info("Data directory", zap.String("path", config.GetDataDir()))
 	startupLogger.Info("Database connections", zap.Strings("dsns", config.GetDatabase().Addresses))
 
-	db, dbVersion := dbConnect(startupLogger, config)
-	startupLogger.Info("Database information", zap.String("version", dbVersion))
+	//db, dbVersion := dbConnect(startupLogger, config)
+	// for now until i can clean up the interface
+	var db *sql.DB = nil
+	//startupLogger.Info("Database information", zap.String("version", dbVersion))
 
 	// Check migration status and fail fast if the schema has diverged.
 	//migrate.StartupCheck(startupLogger, db)
@@ -233,8 +235,8 @@ func dbConnect(multiLogger *zap.Logger, config server.Config) (*sql.DB, string) 
 
 	//multiLogger.Debug("Complete database connection URL", zap.String("raw_url", parsedURL.String()))
 	//db, err := sql.Open("pgx", parsedURL.String())
-	//db, err := sql.Open("ramsql", "nakama")
-	db, err := sql.Open("sqlite3", "./cache.db")
+	db, err := sql.Open("ramsql", "nakama")
+	//db, err := sql.Open("sqlite3", "./cache.db")
 	multiLogger.Debug("Connected to SQLite DB")
 
 	if err != nil {
