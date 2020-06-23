@@ -7,7 +7,7 @@
 https://heroiclabs.com/docs/unity-client-guide/
 4. Refer to the Nakama documentation on how to create custom modules which can handle game logic:
 https://heroiclabs.com/docs/runtime-code-function-reference/#nakama-module
-5. (Future) Please check out the simple client example to see how to interface with the server:
+5. Please check out the simple client example to see how to interface with the server:
 https://github.com/aaron-skillz/sync-server-unity-example
 TODO:
 Configure SSL
