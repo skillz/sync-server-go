@@ -9,14 +9,12 @@ https://heroiclabs.com/docs/unity-client-guide/
 https://heroiclabs.com/docs/runtime-code-function-reference/#nakama-module
 5. Please check out the simple client example to see how to interface with the server:
 https://github.com/aaron-skillz/sync-server-unity-example
-TODO:
-Configure SSL
-Use external match maker ID and token (which will be provided by Skillz SDK)
-heroiclabs.comheroiclabs.com
-.NET/Unity client guide - Nakama server
-Documentation for the Nakama realtime and social server for games and apps.
 
-## Docker
+
+## Pre-Build Server
+We have created a docker image that you can use. The server uses the Nakama interface and API so you can use the examples to work with the server. You can download the image and run it locally.
+
+## Docker Image
 Docker Hub: https://hub.docker.com/r/skillzint/nakama
 
 ### Start Docker Contianer
