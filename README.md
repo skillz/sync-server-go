@@ -3,12 +3,12 @@
 1. Download source and build
 	Note: Please follow instructions found in the build folder README.md
 2. The build creates the nakama executable. To run the server execute: ./nakama from the command line
-3. Please check out the simple client example to see how to interface with the server:
-https://github.com/aaron-skillz/sync-server-unity-example
+3. Check out the Nakama docs on how to work with the Unity Client:
+https://heroiclabs.com/docs/unity-client-guide/
 4. Refer to the Nakama documentation on how to create custom modules which can handle game logic:
 https://heroiclabs.com/docs/runtime-code-function-reference/#nakama-module
-5. Check out the Nakama docs on how to work with the Unity Client:
-https://heroiclabs.com/docs/unity-client-guide/
+5. (Future) Please check out the simple client example to see how to interface with the server:
+https://github.com/aaron-skillz/sync-server-unity-example
 TODO:
 Configure SSL
 Use external match maker ID and token (which will be provided by Skillz SDK)
