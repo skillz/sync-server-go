@@ -155,6 +155,11 @@ func (r *LocalMatchRegistry) CreateMatch(ctx context.Context, logger *zap.Logger
 	var id uuid.UUID
 	if skillzID, ok := params["skillz_match_id"]; ok {
 		id = uuid.NewV5(uuid.NamespaceURL, skillzID.(string))
+		 if skillzMatch, loaded := r.matches.Load(id); loaded {
+		 	m := skillzMatch.(*MatchHandler)
+		 	logger.Debug("Skillz match found", zap.Any("skillz_match", m))
+		 	return m.IDStr, nil
+		 }
 		logger.Debug("Skillz Match ID submitted", zap.String("match_id", id.String()))
 	} else {
 		// No Skillz match ID, create one.
