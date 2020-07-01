@@ -18,7 +18,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/heroiclabs/nakama/v2/cronexpr"
+	"github.com/aaron-skillz/sync-server-go/cronexpr"
 )
 
 /******************************************************************************/

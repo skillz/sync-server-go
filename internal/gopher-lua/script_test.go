@@ -2,7 +2,7 @@ package lua
 
 import (
 	"fmt"
-	"github.com/heroiclabs/nakama/v2/internal/gopher-lua/parse"
+	"github.com/aaron-skillz/sync-server-go/internal/gopher-lua/parse"
 	"os"
 	"runtime"
 	"sync/atomic"

@@ -12,9 +12,11 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
-	github.com/heroiclabs/nakama-common v1.5.1 // indirect
-	github.com/heroiclabs/nakama/v2 v2.12.0
 	github.com/jackc/pgx v3.6.2+incompatible
+	github.com/m3db/prometheus_client_golang v0.8.1 // indirect
+	github.com/m3db/prometheus_client_model v0.1.0 // indirect
+	github.com/m3db/prometheus_common v0.1.0 // indirect
+	github.com/m3db/prometheus_procfs v0.8.1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/pkg/errors v0.9.1
 	github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244

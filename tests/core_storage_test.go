@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aaron-skillz/sync-server-go/server"
 	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/heroiclabs/nakama/v2/server"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 )

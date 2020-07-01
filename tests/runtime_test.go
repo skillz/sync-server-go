@@ -26,9 +26,9 @@ import (
 
 	"fmt"
 
+	"github.com/aaron-skillz/sync-server-go/server"
 	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/heroiclabs/nakama/v2/server"
 	"golang.org/x/crypto/bcrypt"
 )
 

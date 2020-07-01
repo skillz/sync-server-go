@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/heroiclabs/nakama/v2/ga"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -32,8 +31,6 @@ import (
 
 	"io/ioutil"
 	"path/filepath"
-
-
 	"github.com/aaron-skillz/sync-server-go/migrate"
 	"github.com/aaron-skillz/sync-server-go/server"
 	"github.com/gofrs/uuid"
@@ -276,15 +273,15 @@ func dbConnect(multiLogger *zap.Logger, config server.Config) (*sql.DB, string) 
 //
 // This information is sent via Google Analytics which allows the Nakama team to
 // analyze usage patterns and errors in order to help improve the server.
-func runTelemetry(httpc *http.Client, gacode string, cookie string) {
-	if ga.SendSessionStart(httpc, gacode, cookie) != nil {
-		return
-	}
-	if ga.SendEvent(httpc, gacode, cookie, &ga.Event{Ec: "version", Ea: fmt.Sprintf("%s+%s", version, commitID)}) != nil {
-		return
-	}
-	_ = ga.SendEvent(httpc, gacode, cookie, &ga.Event{Ec: "variant", Ea: "nakama"})
-}
+//func runTelemetry(httpc *http.Client, gacode string, cookie string) {
+//	if ga.SendSessionStart(httpc, gacode, cookie) != nil {
+//		return
+//	}
+//	if ga.SendEvent(httpc, gacode, cookie, &ga.Event{Ec: "version", Ea: fmt.Sprintf("%s+%s", version, commitID)}) != nil {
+//		return
+//	}
+//	_ = ga.SendEvent(httpc, gacode, cookie, &ga.Event{Ec: "variant", Ea: "nakama"})
+//}
 
 func newOrLoadCookie(config server.Config) string {
 	filePath := filepath.FromSlash(config.GetDataDir() + "/" + cookieFilename)
