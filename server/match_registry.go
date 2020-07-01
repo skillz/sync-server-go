@@ -151,7 +151,17 @@ func (r *LocalMatchRegistry) CreateMatch(ctx context.Context, logger *zap.Logger
 		return "", ErrCannotEncodeParams
 	}
 
-	id := uuid.Must(uuid.NewV4())
+	// check for Skillz match ID
+	var id uuid.UUID
+	if skillzID, ok := params["skillz_match_id"]; ok {
+		id = uuid.NewV5(uuid.NamespaceURL, skillzID.(string))
+		logger.Debug("Skillz Match ID submitted", zap.String("match_id", id.String()))
+	} else {
+		// No Skillz match ID, create one.
+		id = uuid.Must(uuid.NewV4())
+	}
+	// End Skillz addon
+
 	matchLogger := logger.With(zap.String("mid", id.String()))
 	stopped := atomic.NewBool(false)
 
