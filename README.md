@@ -26,3 +26,6 @@ docker-compose -f ./docker-compose.yml up
 ```
 docker-compose -f ./docker-compose.yml down
 ```
+
+## Nakama Config docs
+https://heroiclabs.com/docs/install-configuration/
