@@ -1,12 +1,12 @@
 version: '3'
 services:
   nakama:
-    image: skillzint/nakama:0.1.0
+    image: skillzint/nakama:latest
     entrypoint:
       - "/bin/sh"
       - "-ecx"
       - >
-          exec /nakama/nakama --name nakama1 --logger.level DEBUG --session.token_expiry_sec 7200 --metrics.prometheus_port 9100
+          exec /nakama/nakama --name nakama1 --logger.level DEBUG --session.token_expiry_sec 7200
     restart: "no"
 #    links:
 #    depends_on:
@@ -16,7 +16,7 @@ services:
     expose:
       - "7349"
       - "7350"
-      - "9100"
+#      - "9100"
     ports:
       - "7349:7349"
       - "7350:7350"
