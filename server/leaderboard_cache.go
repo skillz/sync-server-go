@@ -18,16 +18,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"log"
-	"sort"
-	"strconv"
-	"sync"
-	"time"
-
 	"github.com/aaron-skillz/sync-server-go/cronexpr"
-	"github.com/jackc/pgx/pgtype"
 	"go.uber.org/zap"
+	"log"
+	"sync"
 )
 
 const (
@@ -161,20 +155,22 @@ type LocalLeaderboardCache struct {
 }
 
 func NewLocalLeaderboardCache(logger, startupLogger *zap.Logger, db *sql.DB) LeaderboardCache {
-	l := &LocalLeaderboardCache{
-		logger:       logger,
-		db:           db,
-		leaderboards: make(map[string]*Leaderboard),
-
-		tournamentList: make([]*Leaderboard, 0),
-	}
-
-	err := l.RefreshAllLeaderboards(context.Background())
-	if err != nil {
-		startupLogger.Fatal("Error loading leaderboard cache from database", zap.Error(err))
-	}
-
-	return l
+	logger.Info("method not implemented")
+	return nil
+	//l := &LocalLeaderboardCache{
+	//	logger:       logger,
+	//	db:           db,
+	//	leaderboards: make(map[string]*Leaderboard),
+	//
+	//	tournamentList: make([]*Leaderboard, 0),
+	//}
+	//
+	//err := l.RefreshAllLeaderboards(context.Background())
+	//if err != nil {
+	//	startupLogger.Fatal("Error loading leaderboard cache from database", zap.Error(err))
+	//}
+	//
+	//return l
 }
 
 func (l *LocalLeaderboardCache) RefreshAllLeaderboards(ctx context.Context) error {
@@ -265,426 +261,442 @@ func (l *LocalLeaderboardCache) RefreshAllLeaderboards(ctx context.Context) erro
 //	l.leaderboards = leaderboards
 //	l.tournamentList = tournamentList
 //	l.Unlock()
-
+	l.logger.Info("method not implemented")
 	return nil
 }
 
 func (l *LocalLeaderboardCache) Get(id string) *Leaderboard {
-	var lb *Leaderboard
-	l.RLock()
-	lb = l.leaderboards[id]
-	l.RUnlock()
-	return lb
+	//var lb *Leaderboard
+	//l.RLock()
+	//lb = l.leaderboards[id]
+	//l.RUnlock()
+	//return lb
+	l.logger.Info("method not implemented")
+	return nil
 }
 
 func (l *LocalLeaderboardCache) GetAllLeaderboards() []*Leaderboard {
-	l.RLock()
-	leaderboards := make([]*Leaderboard, 0, len(l.leaderboards))
-	for _, v := range l.leaderboards {
-		leaderboards = append(leaderboards, v)
-	}
-	l.RUnlock()
-	return leaderboards
+	//l.RLock()
+	//leaderboards := make([]*Leaderboard, 0, len(l.leaderboards))
+	//for _, v := range l.leaderboards {
+	//	leaderboards = append(leaderboards, v)
+	//}
+	//l.RUnlock()
+	//return leaderboards
+	l.logger.Info("method not implemented")
+	return nil
 }
 
 func (l *LocalLeaderboardCache) Create(ctx context.Context, id string, authoritative bool, sortOrder, operator int, resetSchedule, metadata string) (*Leaderboard, error) {
-	l.Lock()
-	if leaderboard, ok := l.leaderboards[id]; ok {
-		// Creation is an idempotent operation.
-		l.Unlock()
-		return leaderboard, nil
-	}
-	l.Unlock()
-
-	var expr *cronexpr.Expression
-	var err error
-	if resetSchedule != "" {
-		expr, err = cronexpr.Parse(resetSchedule)
-		if err != nil {
-			l.logger.Error("Error parsing leaderboard reset schedule", zap.Error(err))
-			return nil, err
-		}
-	}
-
-	// Insert into database first.
-	query := "INSERT INTO leaderboard (id, authoritative, sort_order, operator, metadata"
-	if resetSchedule != "" {
-		query += ", reset_schedule"
-	}
-	query += ") VALUES ($1, $2, $3, $4, $5"
-	if resetSchedule != "" {
-		query += ", $6"
-	}
-	query += ") RETURNING create_time"
-	params := []interface{}{id, authoritative, sortOrder, operator, metadata}
-	if resetSchedule != "" {
-		params = append(params, resetSchedule)
-	}
-	var createTime pgtype.Timestamptz
-	err = l.db.QueryRowContext(ctx, query, params...).Scan(&createTime)
-	if err != nil {
-		l.logger.Error("Error creating leaderboard", zap.Error(err))
-		return nil, err
-	}
-
-	// Then add to cache.
-	leaderboard := &Leaderboard{
-		Id:               id,
-		Authoritative:    authoritative,
-		SortOrder:        sortOrder,
-		Operator:         operator,
-		ResetScheduleStr: resetSchedule,
-		ResetSchedule:    expr,
-		Metadata:         metadata,
-		CreateTime:       createTime.Time.Unix(),
-	}
-
-	l.Lock()
-	if leaderboard, ok := l.leaderboards[id]; ok {
-		// Maybe multiple concurrent creations for this ID.
-		l.Unlock()
-		return leaderboard, nil
-	}
-	l.leaderboards[id] = leaderboard
-	l.Unlock()
-
-	return leaderboard, nil
+	//l.Lock()
+	//if leaderboard, ok := l.leaderboards[id]; ok {
+	//	// Creation is an idempotent operation.
+	//	l.Unlock()
+	//	return leaderboard, nil
+	//}
+	//l.Unlock()
+	//
+	//var expr *cronexpr.Expression
+	//var err error
+	//if resetSchedule != "" {
+	//	expr, err = cronexpr.Parse(resetSchedule)
+	//	if err != nil {
+	//		l.logger.Error("Error parsing leaderboard reset schedule", zap.Error(err))
+	//		return nil, err
+	//	}
+	//}
+	//
+	//// Insert into database first.
+	//query := "INSERT INTO leaderboard (id, authoritative, sort_order, operator, metadata"
+	//if resetSchedule != "" {
+	//	query += ", reset_schedule"
+	//}
+	//query += ") VALUES ($1, $2, $3, $4, $5"
+	//if resetSchedule != "" {
+	//	query += ", $6"
+	//}
+	//query += ") RETURNING create_time"
+	//params := []interface{}{id, authoritative, sortOrder, operator, metadata}
+	//if resetSchedule != "" {
+	//	params = append(params, resetSchedule)
+	//}
+	//var createTime pgtype.Timestamptz
+	//err = l.db.QueryRowContext(ctx, query, params...).Scan(&createTime)
+	//if err != nil {
+	//	l.logger.Error("Error creating leaderboard", zap.Error(err))
+	//	return nil, err
+	//}
+	//
+	//// Then add to cache.
+	//leaderboard := &Leaderboard{
+	//	Id:               id,
+	//	Authoritative:    authoritative,
+	//	SortOrder:        sortOrder,
+	//	Operator:         operator,
+	//	ResetScheduleStr: resetSchedule,
+	//	ResetSchedule:    expr,
+	//	Metadata:         metadata,
+	//	CreateTime:       createTime.Time.Unix(),
+	//}
+	//
+	//l.Lock()
+	//if leaderboard, ok := l.leaderboards[id]; ok {
+	//	// Maybe multiple concurrent creations for this ID.
+	//	l.Unlock()
+	//	return leaderboard, nil
+	//}
+	//l.leaderboards[id] = leaderboard
+	//l.Unlock()
+	//
+	//return leaderboard, nil
+	l.logger.Info("method not implemented")
+	return nil, nil
 }
 
 func (l *LocalLeaderboardCache) Insert(id string, authoritative bool, sortOrder, operator int, resetSchedule, metadata string, createTime int64) {
-	var expr *cronexpr.Expression
-	var err error
-	if resetSchedule != "" {
-		expr, err = cronexpr.Parse(resetSchedule)
-		if err != nil {
-			// Not expected, this insert is as a result of a previous create that has succeeded.
-			l.logger.Error("Error parsing leaderboard reset schedule for insert", zap.Error(err))
-			return
-		}
-	}
-
-	leaderboard := &Leaderboard{
-		Id:               id,
-		Authoritative:    authoritative,
-		SortOrder:        sortOrder,
-		Operator:         operator,
-		ResetScheduleStr: resetSchedule,
-		ResetSchedule:    expr,
-		Metadata:         metadata,
-		CreateTime:       createTime,
-	}
-
-	l.Lock()
-	l.leaderboards[id] = leaderboard
-	l.Unlock()
+	//var expr *cronexpr.Expression
+	//var err error
+	//if resetSchedule != "" {
+	//	expr, err = cronexpr.Parse(resetSchedule)
+	//	if err != nil {
+	//		// Not expected, this insert is as a result of a previous create that has succeeded.
+	//		l.logger.Error("Error parsing leaderboard reset schedule for insert", zap.Error(err))
+	//		return
+	//	}
+	//}
+	//
+	//leaderboard := &Leaderboard{
+	//	Id:               id,
+	//	Authoritative:    authoritative,
+	//	SortOrder:        sortOrder,
+	//	Operator:         operator,
+	//	ResetScheduleStr: resetSchedule,
+	//	ResetSchedule:    expr,
+	//	Metadata:         metadata,
+	//	CreateTime:       createTime,
+	//}
+	//
+	//l.Lock()
+	//l.leaderboards[id] = leaderboard
+	//l.Unlock()
+	l.logger.Info("method not implemented")
 }
 
 func (l *LocalLeaderboardCache) CreateTournament(ctx context.Context, id string, sortOrder, operator int, resetSchedule, metadata, title, description string, category, startTime, endTime, duration, maxSize, maxNumScore int, joinRequired bool) (*Leaderboard, error) {
-	resetCron, err := checkTournamentConfig(resetSchedule, startTime, endTime, duration, maxSize, maxNumScore)
-	if err != nil {
-		l.logger.Error("Error while creating tournament", zap.Error(err))
-		return nil, err
-	}
-
-	l.RLock()
-	leaderboard := l.leaderboards[id]
-	l.RUnlock()
-	if leaderboard != nil {
-		if leaderboard.IsTournament() {
-			// Creation is an idempotent operation.
-			return leaderboard, nil
-		}
-		l.logger.Error("Cannot create tournament as leaderboard is already in use.", zap.String("leaderboard_id", id))
-		return nil, fmt.Errorf("cannot create tournament as leaderboard is already in use")
-	}
-
-	params := []interface{}{id, true, sortOrder, operator, duration}
-	columns := "id, authoritative, sort_order, operator, duration"
-	values := "$1, $2, $3, $4, $5"
-
-	if resetSchedule != "" {
-		params = append(params, resetSchedule)
-		columns += ", reset_schedule"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if metadata != "" {
-		params = append(params, metadata)
-		columns += ", metadata"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if category >= 0 {
-		params = append(params, category)
-		columns += ", category"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if description != "" {
-		params = append(params, description)
-		columns += ", description"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if endTime > 0 {
-		params = append(params, time.Unix(int64(endTime), 0).UTC())
-		columns += ", end_time"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if joinRequired {
-		params = append(params, joinRequired)
-		columns += ", join_required"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if maxSize > 0 {
-		params = append(params, maxSize)
-		columns += ", max_size"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if maxNumScore > 0 {
-		params = append(params, maxNumScore)
-		columns += ", max_num_score"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if title != "" {
-		params = append(params, title)
-		columns += ", title"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	if startTime > 0 {
-		params = append(params, time.Unix(int64(startTime), 0).UTC())
-		columns += ", start_time"
-		values += ", $" + strconv.Itoa(len(params))
-	}
-
-	query := "INSERT INTO leaderboard (" + columns + ") VALUES (" + values + ") RETURNING metadata, max_size, max_num_score, create_time, start_time, end_time"
-
-	l.logger.Debug("Create tournament query", zap.String("query", query))
-
-	var dbMetadata string
-	var dbMaxSize int
-	var dbMaxNumScore int
-	var createTime pgtype.Timestamptz
-	var dbStartTime pgtype.Timestamptz
-	var dbEndTime pgtype.Timestamptz
-	err = l.db.QueryRowContext(ctx, query, params...).Scan(&dbMetadata, &dbMaxSize, &dbMaxNumScore, &createTime, &dbStartTime, &dbEndTime)
-	if err != nil {
-		l.logger.Error("Error creating tournament", zap.Error(err))
-		return nil, err
-	}
-
-	leaderboard = &Leaderboard{
-		Id:               id,
-		Authoritative:    true,
-		SortOrder:        sortOrder,
-		Operator:         operator,
-		ResetScheduleStr: resetSchedule,
-		ResetSchedule:    resetCron,
-		Metadata:         dbMetadata,
-		CreateTime:       createTime.Time.Unix(),
-		Category:         category,
-		Description:      description,
-		Duration:         duration,
-		EndTime:          0,
-		JoinRequired:     joinRequired,
-		MaxSize:          dbMaxSize,
-		MaxNumScore:      dbMaxNumScore,
-		Title:            title,
-		StartTime:        dbStartTime.Time.Unix(),
-	}
-	if dbEndTime.Status == pgtype.Present {
-		leaderboard.EndTime = dbEndTime.Time.Unix()
-	}
-
-	l.Lock()
-	l.leaderboards[id] = leaderboard
-	l.tournamentList = append(l.tournamentList, leaderboard)
-	sort.Sort(OrderedTournaments(l.tournamentList))
-	l.Unlock()
-
-	return leaderboard, nil
+	//resetCron, err := checkTournamentConfig(resetSchedule, startTime, endTime, duration, maxSize, maxNumScore)
+	//if err != nil {
+	//	l.logger.Error("Error while creating tournament", zap.Error(err))
+	//	return nil, err
+	//}
+	//
+	//l.RLock()
+	//leaderboard := l.leaderboards[id]
+	//l.RUnlock()
+	//if leaderboard != nil {
+	//	if leaderboard.IsTournament() {
+	//		// Creation is an idempotent operation.
+	//		return leaderboard, nil
+	//	}
+	//	l.logger.Error("Cannot create tournament as leaderboard is already in use.", zap.String("leaderboard_id", id))
+	//	return nil, fmt.Errorf("cannot create tournament as leaderboard is already in use")
+	//}
+	//
+	//params := []interface{}{id, true, sortOrder, operator, duration}
+	//columns := "id, authoritative, sort_order, operator, duration"
+	//values := "$1, $2, $3, $4, $5"
+	//
+	//if resetSchedule != "" {
+	//	params = append(params, resetSchedule)
+	//	columns += ", reset_schedule"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if metadata != "" {
+	//	params = append(params, metadata)
+	//	columns += ", metadata"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if category >= 0 {
+	//	params = append(params, category)
+	//	columns += ", category"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if description != "" {
+	//	params = append(params, description)
+	//	columns += ", description"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if endTime > 0 {
+	//	params = append(params, time.Unix(int64(endTime), 0).UTC())
+	//	columns += ", end_time"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if joinRequired {
+	//	params = append(params, joinRequired)
+	//	columns += ", join_required"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if maxSize > 0 {
+	//	params = append(params, maxSize)
+	//	columns += ", max_size"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if maxNumScore > 0 {
+	//	params = append(params, maxNumScore)
+	//	columns += ", max_num_score"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if title != "" {
+	//	params = append(params, title)
+	//	columns += ", title"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//if startTime > 0 {
+	//	params = append(params, time.Unix(int64(startTime), 0).UTC())
+	//	columns += ", start_time"
+	//	values += ", $" + strconv.Itoa(len(params))
+	//}
+	//
+	//query := "INSERT INTO leaderboard (" + columns + ") VALUES (" + values + ") RETURNING metadata, max_size, max_num_score, create_time, start_time, end_time"
+	//
+	//l.logger.Debug("Create tournament query", zap.String("query", query))
+	//
+	//var dbMetadata string
+	//var dbMaxSize int
+	//var dbMaxNumScore int
+	//var createTime pgtype.Timestamptz
+	//var dbStartTime pgtype.Timestamptz
+	//var dbEndTime pgtype.Timestamptz
+	//err = l.db.QueryRowContext(ctx, query, params...).Scan(&dbMetadata, &dbMaxSize, &dbMaxNumScore, &createTime, &dbStartTime, &dbEndTime)
+	//if err != nil {
+	//	l.logger.Error("Error creating tournament", zap.Error(err))
+	//	return nil, err
+	//}
+	//
+	//leaderboard = &Leaderboard{
+	//	Id:               id,
+	//	Authoritative:    true,
+	//	SortOrder:        sortOrder,
+	//	Operator:         operator,
+	//	ResetScheduleStr: resetSchedule,
+	//	ResetSchedule:    resetCron,
+	//	Metadata:         dbMetadata,
+	//	CreateTime:       createTime.Time.Unix(),
+	//	Category:         category,
+	//	Description:      description,
+	//	Duration:         duration,
+	//	EndTime:          0,
+	//	JoinRequired:     joinRequired,
+	//	MaxSize:          dbMaxSize,
+	//	MaxNumScore:      dbMaxNumScore,
+	//	Title:            title,
+	//	StartTime:        dbStartTime.Time.Unix(),
+	//}
+	//if dbEndTime.Status == pgtype.Present {
+	//	leaderboard.EndTime = dbEndTime.Time.Unix()
+	//}
+	//
+	//l.Lock()
+	//l.leaderboards[id] = leaderboard
+	//l.tournamentList = append(l.tournamentList, leaderboard)
+	//sort.Sort(OrderedTournaments(l.tournamentList))
+	//l.Unlock()
+	//
+	//return leaderboard, nil
+	l.logger.Info("method not implemented")
+	return nil, nil
 }
 
 func (l *LocalLeaderboardCache) InsertTournament(id string, sortOrder, operator int, resetSchedule, metadata, title, description string, category, duration, maxSize, maxNumScore int, joinRequired bool, createTime, startTime, endTime int64) {
-	var expr *cronexpr.Expression
-	var err error
-	if resetSchedule != "" {
-		expr, err = cronexpr.Parse(resetSchedule)
-		if err != nil {
-			// Not expected, this insert is as a result of a previous create that has succeeded.
-			l.logger.Error("Error parsing tournament reset schedule for insert", zap.Error(err))
-			return
-		}
-	}
-
-	leaderboard := &Leaderboard{
-		Id:               id,
-		Authoritative:    true,
-		SortOrder:        sortOrder,
-		Operator:         operator,
-		ResetScheduleStr: resetSchedule,
-		ResetSchedule:    expr,
-		Metadata:         metadata,
-		CreateTime:       createTime,
-		Category:         category,
-		Description:      description,
-		Duration:         duration,
-		JoinRequired:     joinRequired,
-		MaxSize:          maxSize,
-		MaxNumScore:      maxNumScore,
-		Title:            title,
-		StartTime:        startTime,
-		EndTime:          endTime,
-	}
-
-	l.Lock()
-	l.leaderboards[id] = leaderboard
-	l.tournamentList = append(l.tournamentList, leaderboard)
-	sort.Sort(OrderedTournaments(l.tournamentList))
-	l.Unlock()
+	//var expr *cronexpr.Expression
+	//var err error
+	//if resetSchedule != "" {
+	//	expr, err = cronexpr.Parse(resetSchedule)
+	//	if err != nil {
+	//		// Not expected, this insert is as a result of a previous create that has succeeded.
+	//		l.logger.Error("Error parsing tournament reset schedule for insert", zap.Error(err))
+	//		return
+	//	}
+	//}
+	//
+	//leaderboard := &Leaderboard{
+	//	Id:               id,
+	//	Authoritative:    true,
+	//	SortOrder:        sortOrder,
+	//	Operator:         operator,
+	//	ResetScheduleStr: resetSchedule,
+	//	ResetSchedule:    expr,
+	//	Metadata:         metadata,
+	//	CreateTime:       createTime,
+	//	Category:         category,
+	//	Description:      description,
+	//	Duration:         duration,
+	//	JoinRequired:     joinRequired,
+	//	MaxSize:          maxSize,
+	//	MaxNumScore:      maxNumScore,
+	//	Title:            title,
+	//	StartTime:        startTime,
+	//	EndTime:          endTime,
+	//}
+	//
+	//l.Lock()
+	//l.leaderboards[id] = leaderboard
+	//l.tournamentList = append(l.tournamentList, leaderboard)
+	//sort.Sort(OrderedTournaments(l.tournamentList))
+	//l.Unlock()
+	l.logger.Info("method not implemented")
 }
 
 func (l *LocalLeaderboardCache) ListTournaments(now int64, categoryStart, categoryEnd int, startTime, endTime int64, limit int, cursor *TournamentListCursor) ([]*Leaderboard, *TournamentListCursor, error) {
-	list := make([]*Leaderboard, 0, limit)
-	var newCursor *TournamentListCursor
-	skip := cursor != nil
-
-	l.RLock()
-	for _, leaderboard := range l.tournamentList {
-		if skip {
-			if leaderboard.Id == cursor.Id {
-				skip = false
-			}
-			continue
-		}
-
-		if leaderboard.Category < categoryStart {
-			// Skip tournaments with category before start boundary.
-			continue
-		}
-		if leaderboard.Category > categoryEnd {
-			// Skip tournaments with category after end boundary.
-			continue
-		}
-		if leaderboard.StartTime < startTime {
-			// Skip tournaments with start time before filter.
-			continue
-		}
-		if endTime == 0 && leaderboard.EndTime != 0 || (endTime < now && (leaderboard.EndTime > endTime || leaderboard.EndTime == 0)) || leaderboard.EndTime > endTime {
-			// SKIP tournaments where:
-			// - If end time filter is == 0, tournament end time is non-0.
-			// - If end time filter is in the past, tournament end time is after the filter or 0 (never end).
-			// - If end time is in the future, tournament end time is after the filter.
-			continue
-		}
-
-		if ln := len(list); ln >= limit {
-			newCursor = &TournamentListCursor{
-				Id: list[ln-1].Id,
-			}
-			break
-		}
-
-		list = append(list, leaderboard)
-	}
-	l.RUnlock()
-
-	return list, newCursor, nil
+	//list := make([]*Leaderboard, 0, limit)
+	//var newCursor *TournamentListCursor
+	//skip := cursor != nil
+	//
+	//l.RLock()
+	//for _, leaderboard := range l.tournamentList {
+	//	if skip {
+	//		if leaderboard.Id == cursor.Id {
+	//			skip = false
+	//		}
+	//		continue
+	//	}
+	//
+	//	if leaderboard.Category < categoryStart {
+	//		// Skip tournaments with category before start boundary.
+	//		continue
+	//	}
+	//	if leaderboard.Category > categoryEnd {
+	//		// Skip tournaments with category after end boundary.
+	//		continue
+	//	}
+	//	if leaderboard.StartTime < startTime {
+	//		// Skip tournaments with start time before filter.
+	//		continue
+	//	}
+	//	if endTime == 0 && leaderboard.EndTime != 0 || (endTime < now && (leaderboard.EndTime > endTime || leaderboard.EndTime == 0)) || leaderboard.EndTime > endTime {
+	//		// SKIP tournaments where:
+	//		// - If end time filter is == 0, tournament end time is non-0.
+	//		// - If end time filter is in the past, tournament end time is after the filter or 0 (never end).
+	//		// - If end time is in the future, tournament end time is after the filter.
+	//		continue
+	//	}
+	//
+	//	if ln := len(list); ln >= limit {
+	//		newCursor = &TournamentListCursor{
+	//			Id: list[ln-1].Id,
+	//		}
+	//		break
+	//	}
+	//
+	//	list = append(list, leaderboard)
+	//}
+	//l.RUnlock()
+	//
+	//return list, newCursor, nil
+	l.logger.Info("method not implemented")
+	return nil, nil, nil
 }
 
 func (l *LocalLeaderboardCache) Delete(ctx context.Context, id string) error {
-	l.Lock()
-	leaderboard, leaderboardFound := l.leaderboards[id]
-	l.Unlock()
-
-	if !leaderboardFound {
-		// Deletion is an idempotent operation.
-		return nil
-	}
-
-	// Delete from database first.
-	query := "DELETE FROM leaderboard WHERE id = $1"
-	_, err := l.db.ExecContext(ctx, query, id)
-	if err != nil {
-		l.logger.Error("Error deleting leaderboard", zap.Error(err))
-		return err
-	}
-
-	l.Lock()
-	// Then delete from cache.
-	delete(l.leaderboards, id)
-	if leaderboard.IsTournament() {
-		for i, currentLeaderboard := range l.tournamentList {
-			if currentLeaderboard.Id == id {
-				l.tournamentList = append(l.tournamentList[:i], l.tournamentList[i+1:]...)
-				break
-			}
-		}
-	}
-	l.Unlock()
+	//l.Lock()
+	//leaderboard, leaderboardFound := l.leaderboards[id]
+	//l.Unlock()
+	//
+	//if !leaderboardFound {
+	//	// Deletion is an idempotent operation.
+	//	return nil
+	//}
+	//
+	//// Delete from database first.
+	//query := "DELETE FROM leaderboard WHERE id = $1"
+	//_, err := l.db.ExecContext(ctx, query, id)
+	//if err != nil {
+	//	l.logger.Error("Error deleting leaderboard", zap.Error(err))
+	//	return err
+	//}
+	//
+	//l.Lock()
+	//// Then delete from cache.
+	//delete(l.leaderboards, id)
+	//if leaderboard.IsTournament() {
+	//	for i, currentLeaderboard := range l.tournamentList {
+	//		if currentLeaderboard.Id == id {
+	//			l.tournamentList = append(l.tournamentList[:i], l.tournamentList[i+1:]...)
+	//			break
+	//		}
+	//	}
+	//}
+	//l.Unlock()
+	//return nil
+	l.logger.Info("method not implemented")
 	return nil
 }
 
 func (l *LocalLeaderboardCache) Remove(id string) {
-	l.Lock()
-	if leaderboard, ok := l.leaderboards[id]; ok {
-		delete(l.leaderboards, id)
-		if leaderboard.IsTournament() {
-			for i, currentLeaderboard := range l.tournamentList {
-				if currentLeaderboard.Id == id {
-					l.tournamentList = append(l.tournamentList[:i], l.tournamentList[i+1:]...)
-					break
-				}
-			}
-		}
-	}
-	l.Unlock()
+	//l.Lock()
+	//if leaderboard, ok := l.leaderboards[id]; ok {
+	//	delete(l.leaderboards, id)
+	//	if leaderboard.IsTournament() {
+	//		for i, currentLeaderboard := range l.tournamentList {
+	//			if currentLeaderboard.Id == id {
+	//				l.tournamentList = append(l.tournamentList[:i], l.tournamentList[i+1:]...)
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
+	//l.Unlock()
+	l.logger.Info("method not implemented")
 }
 
 func checkTournamentConfig(resetSchedule string, startTime, endTime, duration, maxSize, maxNumScore int) (*cronexpr.Expression, error) {
-	if startTime < 0 {
-		return nil, fmt.Errorf("tournament start time must be a unix UTC time in the future")
-	}
-
-	if duration <= 0 {
-		return nil, fmt.Errorf("tournament duration must be greater than zero")
-	}
-
-	if maxSize < 0 {
-		return nil, fmt.Errorf("tournament max must be greater than zero")
-	}
-
-	if maxNumScore < 0 {
-		return nil, fmt.Errorf("tournament m num score must be greater than zero")
-	}
-
-	if (endTime > 0) && (endTime < startTime) {
-		return nil, fmt.Errorf("tournament end time cannot be before start time")
-	}
-
-	var cron *cronexpr.Expression
-	if resetSchedule != "" {
-		expr, err := cronexpr.Parse(resetSchedule)
-		if err != nil {
-			return nil, fmt.Errorf("could not parse reset schedule: %s", err.Error())
-		}
-		cron = expr
-	}
-
-	if cron != nil {
-		schedules := cron.NextN(time.Unix(int64(startTime), 0).UTC(), 2)
-		firstResetUnix := schedules[0].UTC().Unix()
-
-		// Check that the end time (if specified) is at least strictly after the first active period start time.
-		if (endTime > 0) && (int64(endTime) <= firstResetUnix) {
-			return nil, fmt.Errorf("tournament end time cannot be before first reset schedule - either increase end time or change/disable reset schedule")
-		}
-	}
-
-	return cron, nil
+	//if startTime < 0 {
+	//	return nil, fmt.Errorf("tournament start time must be a unix UTC time in the future")
+	//}
+	//
+	//if duration <= 0 {
+	//	return nil, fmt.Errorf("tournament duration must be greater than zero")
+	//}
+	//
+	//if maxSize < 0 {
+	//	return nil, fmt.Errorf("tournament max must be greater than zero")
+	//}
+	//
+	//if maxNumScore < 0 {
+	//	return nil, fmt.Errorf("tournament m num score must be greater than zero")
+	//}
+	//
+	//if (endTime > 0) && (endTime < startTime) {
+	//	return nil, fmt.Errorf("tournament end time cannot be before start time")
+	//}
+	//
+	//var cron *cronexpr.Expression
+	//if resetSchedule != "" {
+	//	expr, err := cronexpr.Parse(resetSchedule)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("could not parse reset schedule: %s", err.Error())
+	//	}
+	//	cron = expr
+	//}
+	//
+	//if cron != nil {
+	//	schedules := cron.NextN(time.Unix(int64(startTime), 0).UTC(), 2)
+	//	firstResetUnix := schedules[0].UTC().Unix()
+	//
+	//	// Check that the end time (if specified) is at least strictly after the first active period start time.
+	//	if (endTime > 0) && (int64(endTime) <= firstResetUnix) {
+	//		return nil, fmt.Errorf("tournament end time cannot be before first reset schedule - either increase end time or change/disable reset schedule")
+	//	}
+	//}
+	//
+	//return cron, nil
+	return nil, nil
 }

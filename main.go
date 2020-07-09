@@ -29,8 +29,6 @@ import (
 	"syscall"
 	"time"
 
-	"io/ioutil"
-	"path/filepath"
 	"github.com/aaron-skillz/sync-server-go/migrate"
 	"github.com/aaron-skillz/sync-server-go/server"
 	"github.com/gofrs/uuid"
@@ -40,6 +38,8 @@ import (
 	_ "github.com/proullon/ramsql/driver"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io/ioutil"
+	"path/filepath"
 )
 
 const cookieFilename = ".cookie"
@@ -123,24 +123,24 @@ func main() {
 	sessionRegistry := server.NewLocalSessionRegistry(metrics)
 	tracker := server.StartLocalTracker(logger, config, sessionRegistry, jsonpbMarshaler)
 	router := server.NewLocalMessageRouter(sessionRegistry, tracker, jsonpbMarshaler)
-	leaderboardCache := server.NewLocalLeaderboardCache(logger, startupLogger, db)
-	leaderboardRankCache := server.NewLocalLeaderboardRankCache(startupLogger, db, config.GetLeaderboard(), leaderboardCache)
-	leaderboardScheduler := server.NewLocalLeaderboardScheduler(logger, db, config, leaderboardCache, leaderboardRankCache)
+	//leaderboardCache := server.NewLocalLeaderboardCache(logger, startupLogger, db)
+	//leaderboardRankCache := server.NewLocalLeaderboardRankCache(startupLogger, db, config.GetLeaderboard(), leaderboardCache)
+	//leaderboardScheduler := server.NewLocalLeaderboardScheduler(logger, db, config, leaderboardCache, leaderboardRankCache)
 	matchRegistry := server.NewLocalMatchRegistry(logger, startupLogger, config, sessionRegistry, tracker, router, metrics, config.GetName())
 	tracker.SetMatchJoinListener(matchRegistry.Join)
 	tracker.SetMatchLeaveListener(matchRegistry.Leave)
 	streamManager := server.NewLocalStreamManager(config, sessionRegistry, tracker)
-	runtime, err := server.NewRuntime(logger, startupLogger, db, jsonpbMarshaler, jsonpbUnmarshaler, config, leaderboardCache, leaderboardRankCache, leaderboardScheduler, sessionRegistry, matchRegistry, tracker, metrics, streamManager, router)
+	runtime, err := server.NewRuntime(logger, startupLogger, db, jsonpbMarshaler, jsonpbUnmarshaler, config, nil, nil, nil, sessionRegistry, matchRegistry, tracker, metrics, streamManager, router)
 	if err != nil {
 		startupLogger.Fatal("Failed initializing runtime modules", zap.Error(err))
 	}
 
-	leaderboardScheduler.Start(runtime)
+	//leaderboardScheduler.Start(runtime)
 
 	pipeline := server.NewPipeline(logger, config, db, jsonpbMarshaler, jsonpbUnmarshaler, sessionRegistry, matchRegistry, matchmaker, tracker, router, runtime)
 	//statusHandler := server.NewLocalStatusHandler(logger, sessionRegistry, matchRegistry, tracker, metrics, config.GetName())
 	//consoleServer := server.StartConsoleServer(logger, startupLogger, db, config, tracker, router, statusHandler, configWarnings, semver)
-	apiServer := server.StartApiServer(logger, startupLogger, db, jsonpbMarshaler, jsonpbUnmarshaler, config, leaderboardCache, leaderboardRankCache, sessionRegistry, matchRegistry, matchmaker, tracker, router, metrics, pipeline, runtime)
+	apiServer := server.StartApiServer(logger, startupLogger, db, jsonpbMarshaler, jsonpbUnmarshaler, config, nil, nil, sessionRegistry, matchRegistry, matchmaker, tracker, router, metrics, pipeline, runtime)
 
 	//gaenabled := len(os.Getenv("NAKAMA_TELEMETRY")) < 1
 	//cookie := newOrLoadCookie(config)
@@ -198,7 +198,7 @@ func main() {
 	apiServer.Stop()
 	//consoleServer.Stop()
 	metrics.Stop(logger)
-	leaderboardScheduler.Stop()
+	//leaderboardScheduler.Stop()
 	tracker.Stop()
 	sessionRegistry.Stop()
 
