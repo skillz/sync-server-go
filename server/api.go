@@ -104,18 +104,34 @@ func StartApiServer(logger *zap.Logger, startupLogger *zap.Logger, db *sql.DB, j
 	}
 	grpcServer := grpc.NewServer(serverOpts...)
 
-	s := &ApiServer{
-		logger:               logger,
-		db:                   db,
-		config:               config,
-		leaderboardCache:     leaderboardCache,
-		leaderboardRankCache: leaderboardRankCache,
-		matchRegistry:        matchRegistry,
-		tracker:              tracker,
-		router:               router,
-		metrics:              metrics,
-		runtime:              runtime,
-		grpcServer:           grpcServer,
+	//s := &ApiServer{
+	//	logger:               logger,
+	//	db:                   db,
+	//	config:               config,
+	//	leaderboardCache:     leaderboardCache,
+	//	leaderboardRankCache: leaderboardRankCache,
+	//	matchRegistry:        matchRegistry,
+	//	tracker:              tracker,
+	//	router:               router,
+	//	metrics:              metrics,
+	//	runtime:              runtime,
+	//	grpcServer:           grpcServer,
+	//}
+
+	s := &ApiServerSkillz{
+		&ApiServer{
+			logger:               logger,
+			db:                   db,
+			config:               config,
+			leaderboardCache:     leaderboardCache,
+			leaderboardRankCache: leaderboardRankCache,
+			matchRegistry:        matchRegistry,
+			tracker:              tracker,
+			router:               router,
+			metrics:              metrics,
+			runtime:              runtime,
+			grpcServer:           grpcServer,
+		},
 	}
 
 	// Register and start GRPC server.
@@ -255,7 +271,7 @@ func StartApiServer(logger *zap.Logger, startupLogger *zap.Logger, db *sql.DB, j
 		}
 	}()
 
-	return s
+	return s.ApiServer
 }
 
 func (s *ApiServer) Stop() {
