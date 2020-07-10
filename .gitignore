@@ -219,3 +219,5 @@ local.properties
 
 ### Git ###
 *.orig
+
+go.sum
