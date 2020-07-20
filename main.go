@@ -104,7 +104,7 @@ func main() {
 	startupLogger.Info("Nakama starting")
 	startupLogger.Info("Node", zap.String("name", config.GetName()), zap.String("version", semver), zap.String("runtime", runtime.Version()), zap.Int("cpu", runtime.NumCPU()), zap.Int("proc", runtime.GOMAXPROCS(0)))
 	startupLogger.Info("Data directory", zap.String("path", config.GetDataDir()))
-	startupLogger.Info("Database connections", zap.Strings("dsns", config.GetDatabase().Addresses))
+	//startupLogger.Info("Database connections", zap.Strings("dsns", config.GetDatabase().Addresses))
 
 	//db, dbVersion := dbConnect(startupLogger, config)
 	// for now until i can clean up the interface

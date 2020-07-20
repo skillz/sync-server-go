@@ -28,16 +28,14 @@ import (
 
 	"github.com/aaron-skillz/sync-server-go/rtapi"
 
+	"github.com/aaron-skillz/sync-server-go/api"
 	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/aaron-skillz/sync-server-go/api"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -1446,388 +1444,394 @@ func ListUserGroups(ctx context.Context, logger *zap.Logger, db *sql.DB, userID 
 }
 
 func GetGroups(ctx context.Context, logger *zap.Logger, db *sql.DB, ids []string) ([]*api.Group, error) {
-	if len(ids) == 0 {
-		return make([]*api.Group, 0), nil
-	}
-
-	statements := make([]string, 0, len(ids))
-	params := make([]interface{}, 0, len(ids))
-	for i, id := range ids {
-		statements = append(statements, "$"+strconv.Itoa(i+1))
-		params = append(params, id)
-	}
-
-	query := `SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
-FROM groups
-WHERE disable_time = '1970-01-01 00:00:00 UTC'
-AND id IN (` + strings.Join(statements, ",") + `)`
-	rows, err := db.QueryContext(ctx, query, params...)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return make([]*api.Group, 0), nil
-		}
-		logger.Error("Could not get groups.", zap.Error(err))
-		return nil, err
-	}
-	// Rows closed in groupConvertRows()
-
-	groups, err := groupConvertRows(rows)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return make([]*api.Group, 0), nil
-		}
-		logger.Error("Could not get groups.", zap.Error(err))
-		return nil, err
-	}
-
-	return groups, nil
+//	if len(ids) == 0 {
+//		return make([]*api.Group, 0), nil
+//	}
+//
+//	statements := make([]string, 0, len(ids))
+//	params := make([]interface{}, 0, len(ids))
+//	for i, id := range ids {
+//		statements = append(statements, "$"+strconv.Itoa(i+1))
+//		params = append(params, id)
+//	}
+//
+//	query := `SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
+//FROM groups
+//WHERE disable_time = '1970-01-01 00:00:00 UTC'
+//AND id IN (` + strings.Join(statements, ",") + `)`
+//	rows, err := db.QueryContext(ctx, query, params...)
+//	if err != nil {
+//		if err == sql.ErrNoRows {
+//			return make([]*api.Group, 0), nil
+//		}
+//		logger.Error("Could not get groups.", zap.Error(err))
+//		return nil, err
+//	}
+//	// Rows closed in groupConvertRows()
+//
+//	groups, err := groupConvertRows(rows)
+//	if err != nil {
+//		if err == sql.ErrNoRows {
+//			return make([]*api.Group, 0), nil
+//		}
+//		logger.Error("Could not get groups.", zap.Error(err))
+//		return nil, err
+//	}
+//
+//	return groups, nil
+	return nil, nil
 }
 
 func ListGroups(ctx context.Context, logger *zap.Logger, db *sql.DB, name string, limit int, cursorStr string) (*api.GroupList, error) {
-	var cursor *groupListCursor
-	if cursorStr != "" {
-		cursor = &groupListCursor{}
-		cb, err := base64.RawURLEncoding.DecodeString(cursorStr)
-		if err != nil {
-			logger.Warn("Could not base64 decode group listing cursor.", zap.String("cursor", cursorStr))
-			return nil, status.Error(codes.InvalidArgument, "Malformed cursor was used.")
-		}
-		if err = gob.NewDecoder(bytes.NewReader(cb)).Decode(cursor); err != nil {
-			logger.Warn("Could not decode group listing cursor.", zap.String("cursor", cursorStr))
-			return nil, status.Error(codes.InvalidArgument, "Malformed cursor was used.")
-		}
-	}
-
-	var query string
-	params := []interface{}{limit}
-	if name == "" {
-		query = `
-SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
-FROM groups
-WHERE disable_time = '1970-01-01 00:00:00 UTC'
-ORDER BY lang_tag ASC, edge_count ASC, id ASC
-LIMIT $1`
-		if cursor != nil {
-			params = append(params, cursor.Lang, cursor.EdgeCount, cursor.ID)
-			query = `
-SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
-FROM groups
-WHERE disable_time = '1970-01-01 00:00:00 UTC'
-AND (lang_tag, edge_count, id) > ($2, $3, $4)
-ORDER BY lang_tag ASC, edge_count ASC, id ASC
-LIMIT $1`
-		}
-	} else {
-		params = append(params, name)
-		query = `
-SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
-FROM groups
-WHERE
-	(disable_time = '1970-01-01 00:00:00 UTC')
-AND
-	(name LIKE $2)
-LIMIT $1`
-		if cursor != nil {
-			params = append(params, cursor.Lang, cursor.EdgeCount, cursor.ID)
-			query = `
-SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
-FROM groups
-WHERE
-	(disable_time = '1970-01-01 00:00:00 UTC')
-AND
-	(name LIKE $2)
-AND
-	((lang_tag, edge_count, id) > ($3, $4, $5))
-LIMIT $1`
-		}
-	}
-
-	groupList := &api.GroupList{Groups: make([]*api.Group, 0)}
-	rows, err := db.QueryContext(ctx, query, params...)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return groupList, nil
-		}
-		logger.Error("Could not list groups.", zap.Error(err), zap.String("name", name))
-		return nil, err
-	}
-	// Rows closed in groupConvertRows()
-
-	groups, err := groupConvertRows(rows)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return groupList, nil
-		}
-		logger.Error("Could not list groups.", zap.Error(err), zap.String("name", name))
-		return nil, err
-	}
-
-	cursorBuf := new(bytes.Buffer)
-	if len(groups) > 0 {
-		lastGroup := groups[len(groups)-1]
-		newCursor := &groupListCursor{
-			ID:        uuid.Must(uuid.FromString(lastGroup.Id)),
-			EdgeCount: lastGroup.EdgeCount,
-			Lang:      lastGroup.LangTag,
-		}
-		if err := gob.NewEncoder(cursorBuf).Encode(newCursor); err != nil {
-			logger.Error("Could not create new cursor.", zap.Error(err))
-			return nil, err
-		}
-		groupList.Groups = groups
-		groupList.Cursor = base64.RawURLEncoding.EncodeToString(cursorBuf.Bytes())
-	}
-
-	return groupList, nil
+//	var cursor *groupListCursor
+//	if cursorStr != "" {
+//		cursor = &groupListCursor{}
+//		cb, err := base64.RawURLEncoding.DecodeString(cursorStr)
+//		if err != nil {
+//			logger.Warn("Could not base64 decode group listing cursor.", zap.String("cursor", cursorStr))
+//			return nil, status.Error(codes.InvalidArgument, "Malformed cursor was used.")
+//		}
+//		if err = gob.NewDecoder(bytes.NewReader(cb)).Decode(cursor); err != nil {
+//			logger.Warn("Could not decode group listing cursor.", zap.String("cursor", cursorStr))
+//			return nil, status.Error(codes.InvalidArgument, "Malformed cursor was used.")
+//		}
+//	}
+//
+//	var query string
+//	params := []interface{}{limit}
+//	if name == "" {
+//		query = `
+//SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
+//FROM groups
+//WHERE disable_time = '1970-01-01 00:00:00 UTC'
+//ORDER BY lang_tag ASC, edge_count ASC, id ASC
+//LIMIT $1`
+//		if cursor != nil {
+//			params = append(params, cursor.Lang, cursor.EdgeCount, cursor.ID)
+//			query = `
+//SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
+//FROM groups
+//WHERE disable_time = '1970-01-01 00:00:00 UTC'
+//AND (lang_tag, edge_count, id) > ($2, $3, $4)
+//ORDER BY lang_tag ASC, edge_count ASC, id ASC
+//LIMIT $1`
+//		}
+//	} else {
+//		params = append(params, name)
+//		query = `
+//SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
+//FROM groups
+//WHERE
+//	(disable_time = '1970-01-01 00:00:00 UTC')
+//AND
+//	(name LIKE $2)
+//LIMIT $1`
+//		if cursor != nil {
+//			params = append(params, cursor.Lang, cursor.EdgeCount, cursor.ID)
+//			query = `
+//SELECT id, creator_id, name, description, avatar_url, state, edge_count, lang_tag, max_count, metadata, create_time, update_time
+//FROM groups
+//WHERE
+//	(disable_time = '1970-01-01 00:00:00 UTC')
+//AND
+//	(name LIKE $2)
+//AND
+//	((lang_tag, edge_count, id) > ($3, $4, $5))
+//LIMIT $1`
+//		}
+//	}
+//
+//	groupList := &api.GroupList{Groups: make([]*api.Group, 0)}
+//	rows, err := db.QueryContext(ctx, query, params...)
+//	if err != nil {
+//		if err == sql.ErrNoRows {
+//			return groupList, nil
+//		}
+//		logger.Error("Could not list groups.", zap.Error(err), zap.String("name", name))
+//		return nil, err
+//	}
+//	// Rows closed in groupConvertRows()
+//
+//	groups, err := groupConvertRows(rows)
+//	if err != nil {
+//		if err == sql.ErrNoRows {
+//			return groupList, nil
+//		}
+//		logger.Error("Could not list groups.", zap.Error(err), zap.String("name", name))
+//		return nil, err
+//	}
+//
+//	cursorBuf := new(bytes.Buffer)
+//	if len(groups) > 0 {
+//		lastGroup := groups[len(groups)-1]
+//		newCursor := &groupListCursor{
+//			ID:        uuid.Must(uuid.FromString(lastGroup.Id)),
+//			EdgeCount: lastGroup.EdgeCount,
+//			Lang:      lastGroup.LangTag,
+//		}
+//		if err := gob.NewEncoder(cursorBuf).Encode(newCursor); err != nil {
+//			logger.Error("Could not create new cursor.", zap.Error(err))
+//			return nil, err
+//		}
+//		groupList.Groups = groups
+//		groupList.Cursor = base64.RawURLEncoding.EncodeToString(cursorBuf.Bytes())
+//	}
+//
+//	return groupList, nil
+	return nil, nil
 }
 
 func groupConvertRows(rows *sql.Rows) ([]*api.Group, error) {
-	defer rows.Close()
-
-	groups := make([]*api.Group, 0)
-
-	for rows.Next() {
-		var id string
-		var creatorID sql.NullString
-		var name sql.NullString
-		var description sql.NullString
-		var avatarURL sql.NullString
-		var lang sql.NullString
-		var metadata []byte
-		var state sql.NullInt64
-		var edgeCount sql.NullInt64
-		var maxCount sql.NullInt64
-		var createTime pgtype.Timestamptz
-		var updateTime pgtype.Timestamptz
-
-		if err := rows.Scan(&id, &creatorID, &name, &description, &avatarURL, &state, &edgeCount, &lang, &maxCount, &metadata, &createTime, &updateTime); err != nil {
-			return nil, err
-		}
-
-		open := true
-		if state.Int64 == 1 {
-			open = false
-		}
-
-		group := &api.Group{
-			Id:          uuid.Must(uuid.FromString(id)).String(),
-			CreatorId:   uuid.Must(uuid.FromString(creatorID.String)).String(),
-			Name:        name.String,
-			Description: description.String,
-			AvatarUrl:   avatarURL.String,
-			LangTag:     lang.String,
-			Metadata:    string(metadata),
-			Open:        &wrappers.BoolValue{Value: open},
-			EdgeCount:   int32(edgeCount.Int64),
-			MaxCount:    int32(maxCount.Int64),
-			CreateTime:  &timestamp.Timestamp{Seconds: createTime.Time.Unix()},
-			UpdateTime:  &timestamp.Timestamp{Seconds: updateTime.Time.Unix()},
-		}
-
-		groups = append(groups, group)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return groups, nil
+	//defer rows.Close()
+	//
+	//groups := make([]*api.Group, 0)
+	//
+	//for rows.Next() {
+	//	var id string
+	//	var creatorID sql.NullString
+	//	var name sql.NullString
+	//	var description sql.NullString
+	//	var avatarURL sql.NullString
+	//	var lang sql.NullString
+	//	var metadata []byte
+	//	var state sql.NullInt64
+	//	var edgeCount sql.NullInt64
+	//	var maxCount sql.NullInt64
+	//	var createTime pgtype.Timestamptz
+	//	var updateTime pgtype.Timestamptz
+	//
+	//	if err := rows.Scan(&id, &creatorID, &name, &description, &avatarURL, &state, &edgeCount, &lang, &maxCount, &metadata, &createTime, &updateTime); err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	open := true
+	//	if state.Int64 == 1 {
+	//		open = false
+	//	}
+	//
+	//	group := &api.Group{
+	//		Id:          uuid.Must(uuid.FromString(id)).String(),
+	//		CreatorId:   uuid.Must(uuid.FromString(creatorID.String)).String(),
+	//		Name:        name.String,
+	//		Description: description.String,
+	//		AvatarUrl:   avatarURL.String,
+	//		LangTag:     lang.String,
+	//		Metadata:    string(metadata),
+	//		Open:        &wrappers.BoolValue{Value: open},
+	//		EdgeCount:   int32(edgeCount.Int64),
+	//		MaxCount:    int32(maxCount.Int64),
+	//		CreateTime:  &timestamp.Timestamp{Seconds: createTime.Time.Unix()},
+	//		UpdateTime:  &timestamp.Timestamp{Seconds: updateTime.Time.Unix()},
+	//	}
+	//
+	//	groups = append(groups, group)
+	//}
+	//if err := rows.Err(); err != nil {
+	//	return nil, err
+	//}
+	//
+	//return groups, nil
+	return nil, nil
 }
 
 func groupAddUser(ctx context.Context, db *sql.DB, tx *sql.Tx, groupID uuid.UUID, userID uuid.UUID, state int) (int64, error) {
-	query := `
-INSERT INTO group_edge
-	(position, state, source_id, destination_id)
-VALUES
-	($1, $2, $3, $4),
-	($1, $2, $4, $3)`
-
-	position := time.Now().UTC().UnixNano()
-
-	var res sql.Result
-	var err error
-	if tx != nil {
-		res, err = tx.ExecContext(ctx, query, position, state, groupID, userID)
-	} else {
-		res, err = db.ExecContext(ctx, query, position, state, groupID, userID)
-	}
-
-	if err != nil {
-		return 0, err
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-	return rowsAffected, nil
+//	query := `
+//INSERT INTO group_edge
+//	(position, state, source_id, destination_id)
+//VALUES
+//	($1, $2, $3, $4),
+//	($1, $2, $4, $3)`
+//
+//	position := time.Now().UTC().UnixNano()
+//
+//	var res sql.Result
+//	var err error
+//	if tx != nil {
+//		res, err = tx.ExecContext(ctx, query, position, state, groupID, userID)
+//	} else {
+//		res, err = db.ExecContext(ctx, query, position, state, groupID, userID)
+//	}
+//
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	rowsAffected, err := res.RowsAffected()
+//	if err != nil {
+//		return 0, err
+//	}
+//	return rowsAffected, nil
+	return 0, nil
 }
 
 func groupUpdateUserState(ctx context.Context, db *sql.DB, tx *sql.Tx, groupID uuid.UUID, userID uuid.UUID, fromState int, toState int) (int64, error) {
-	query := `
-UPDATE group_edge SET
-	update_time = now(), state = $4
-WHERE
-	(source_id = $1::UUID AND destination_id = $2::UUID AND state = $3)
-OR
-	(source_id = $2::UUID AND destination_id = $1::UUID AND state = $3)`
-
-	var res sql.Result
-	var err error
-	if tx != nil {
-		res, err = tx.ExecContext(ctx, query, groupID, userID, fromState, toState)
-	} else {
-		res, err = db.ExecContext(ctx, query, groupID, userID, fromState, toState)
-	}
-
-	if err != nil {
-		return 0, err
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-	return rowsAffected, nil
+//	query := `
+//UPDATE group_edge SET
+//	update_time = now(), state = $4
+//WHERE
+//	(source_id = $1::UUID AND destination_id = $2::UUID AND state = $3)
+//OR
+//	(source_id = $2::UUID AND destination_id = $1::UUID AND state = $3)`
+//
+//	var res sql.Result
+//	var err error
+//	if tx != nil {
+//		res, err = tx.ExecContext(ctx, query, groupID, userID, fromState, toState)
+//	} else {
+//		res, err = db.ExecContext(ctx, query, groupID, userID, fromState, toState)
+//	}
+//
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	rowsAffected, err := res.RowsAffected()
+//	if err != nil {
+//		return 0, err
+//	}
+//	return rowsAffected, nil
+	return 0, nil
 }
 
 func groupCheckUserPermission(ctx context.Context, logger *zap.Logger, db *sql.DB, groupID, userID uuid.UUID, state int) (bool, error) {
-	query := "SELECT state FROM group_edge WHERE source_id = $1::UUID AND destination_id = $2::UUID"
-	var dbState int
-	if err := db.QueryRowContext(ctx, query, groupID, userID).Scan(&dbState); err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
-		}
-		logger.Error("Could not look up user state with group.", zap.Error(err), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
-		return false, err
-	}
-	return dbState <= state, nil
+	//query := "SELECT state FROM group_edge WHERE source_id = $1::UUID AND destination_id = $2::UUID"
+	//var dbState int
+	//if err := db.QueryRowContext(ctx, query, groupID, userID).Scan(&dbState); err != nil {
+	//	if err == sql.ErrNoRows {
+	//		return false, nil
+	//	}
+	//	logger.Error("Could not look up user state with group.", zap.Error(err), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
+	//	return false, err
+	//}
+	//return dbState <= state, nil
+	return true, nil
 }
 
 func deleteGroup(ctx context.Context, logger *zap.Logger, tx *sql.Tx, groupID uuid.UUID) error {
-	query := "DELETE FROM groups WHERE id = $1::UUID"
-	res, err := tx.ExecContext(ctx, query, groupID)
-	if err != nil {
-		logger.Debug("Could not delete group.", zap.Error(err))
-		return err
-	}
-
-	if rowsAffected, err := res.RowsAffected(); err != nil {
-		logger.Debug("Could not count deleted groups.", zap.Error(err))
-		return err
-	} else if rowsAffected == 0 {
-		logger.Info("Did not delete group as group with given ID does not exist.", zap.Error(err), zap.String("group_id", groupID.String()))
-		return nil
-	}
-
-	query = "DELETE FROM group_edge WHERE source_id = $1::UUID OR destination_id = $1::UUID"
-	if _, err = tx.ExecContext(ctx, query, groupID); err != nil {
-		logger.Debug("Could not delete group_edge relationships.", zap.Error(err))
-		return err
-	}
+	//query := "DELETE FROM groups WHERE id = $1::UUID"
+	//res, err := tx.ExecContext(ctx, query, groupID)
+	//if err != nil {
+	//	logger.Debug("Could not delete group.", zap.Error(err))
+	//	return err
+	//}
+	//
+	//if rowsAffected, err := res.RowsAffected(); err != nil {
+	//	logger.Debug("Could not count deleted groups.", zap.Error(err))
+	//	return err
+	//} else if rowsAffected == 0 {
+	//	logger.Info("Did not delete group as group with given ID does not exist.", zap.Error(err), zap.String("group_id", groupID.String()))
+	//	return nil
+	//}
+	//
+	//query = "DELETE FROM group_edge WHERE source_id = $1::UUID OR destination_id = $1::UUID"
+	//if _, err = tx.ExecContext(ctx, query, groupID); err != nil {
+	//	logger.Debug("Could not delete group_edge relationships.", zap.Error(err))
+	//	return err
+	//}
 
 	return nil
 }
 
 func deleteRelationship(ctx context.Context, logger *zap.Logger, tx *sql.Tx, userID uuid.UUID, groupID uuid.UUID) error {
-	query := `
-DELETE FROM group_edge
-WHERE
-	(
-		(source_id = $1::UUID AND destination_id = $2::UUID AND state > 1)
-		OR
-		(source_id = $2::UUID AND destination_id = $1::UUID AND state > 1)
-	)
-RETURNING state`
-
-	var deletedState sql.NullInt64
-	logger.Debug("Removing relationship from group.", zap.String("query", query), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
-	if err := tx.QueryRowContext(ctx, query, userID, groupID).Scan(&deletedState); err != nil {
-		if err != sql.ErrNoRows {
-			logger.Debug("Could not delete relationship from group_edge.", zap.Error(err), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
-			return err
-		}
-	}
-
-	if deletedState.Int64 < 3 {
-		query = "UPDATE groups SET edge_count = edge_count - 1, update_time = now() WHERE id = $1::UUID"
-		_, err := tx.ExecContext(ctx, query, groupID)
-		if err != nil {
-			logger.Debug("Could not update group edge_count.", zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
-			return err
-		}
-	}
+//	query := `
+//DELETE FROM group_edge
+//WHERE
+//	(
+//		(source_id = $1::UUID AND destination_id = $2::UUID AND state > 1)
+//		OR
+//		(source_id = $2::UUID AND destination_id = $1::UUID AND state > 1)
+//	)
+//RETURNING state`
+//
+//	var deletedState sql.NullInt64
+//	logger.Debug("Removing relationship from group.", zap.String("query", query), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
+//	if err := tx.QueryRowContext(ctx, query, userID, groupID).Scan(&deletedState); err != nil {
+//		if err != sql.ErrNoRows {
+//			logger.Debug("Could not delete relationship from group_edge.", zap.Error(err), zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
+//			return err
+//		}
+//	}
+//
+//	if deletedState.Int64 < 3 {
+//		query = "UPDATE groups SET edge_count = edge_count - 1, update_time = now() WHERE id = $1::UUID"
+//		_, err := tx.ExecContext(ctx, query, groupID)
+//		if err != nil {
+//			logger.Debug("Could not update group edge_count.", zap.String("group_id", groupID.String()), zap.String("user_id", userID.String()))
+//			return err
+//		}
+//	}
 
 	return nil
 }
 
 func GroupDeleteAll(ctx context.Context, logger *zap.Logger, tx *sql.Tx, userID uuid.UUID) error {
-	query := `
-SELECT id, edge_count, group_edge.state FROM groups
-JOIN group_edge ON (group_edge.source_id = id)
-WHERE group_edge.destination_id = $1`
-
-	rows, err := tx.QueryContext(ctx, query, userID)
-	if err != nil {
-		logger.Debug("Could not list groups for a user.", zap.Error(err), zap.String("user_id", userID.String()))
-		return err
-	}
-
-	deleteGroupsAndRelationships := make([]uuid.UUID, 0)
-	deleteRelationships := make([]uuid.UUID, 0)
-	checkForOtherSuperadmins := make([]uuid.UUID, 0)
-
-	for rows.Next() {
-		var id string
-		var edgeCount sql.NullInt64
-		var userState sql.NullInt64
-
-		if err := rows.Scan(&id, &edgeCount, &userState); err != nil {
-			_ = rows.Close()
-			logger.Error("Could not parse rows when listing groups for a user.", zap.Error(err), zap.String("user_id", userID.String()))
-			return err
-		}
-
-		groupID := uuid.Must(uuid.FromString(id))
-		if userState.Int64 == 0 {
-			if edgeCount.Int64 == 1 {
-				deleteGroupsAndRelationships = append(deleteGroupsAndRelationships, groupID)
-			} else {
-				checkForOtherSuperadmins = append(checkForOtherSuperadmins, groupID)
-			}
-		} else {
-			deleteRelationships = append(deleteRelationships, groupID)
-		}
-	}
-	_ = rows.Close()
-
-	countOtherSuperadminsQuery := "SELECT COUNT(source_id) FROM group_edge WHERE source_id = $1 AND destination_id != $2 AND state = 0"
-	for _, g := range checkForOtherSuperadmins {
-		var otherSuperadminCount sql.NullInt64
-		err := tx.QueryRowContext(ctx, countOtherSuperadminsQuery, g, userID).Scan(&otherSuperadminCount)
-		if err != nil {
-			logger.Error("Could not parse rows when listing other superadmins.", zap.Error(err), zap.String("group_id", g.String()), zap.String("user_id", userID.String()))
-			return err
-		}
-
-		if otherSuperadminCount.Int64 == 0 {
-			deleteGroupsAndRelationships = append(deleteGroupsAndRelationships, g)
-		} else {
-			deleteRelationships = append(deleteRelationships, g)
-		}
-	}
-
-	for _, g := range deleteGroupsAndRelationships {
-		if err := deleteGroup(ctx, logger, tx, g); err != nil {
-			return err
-		}
-	}
-
-	for _, g := range deleteRelationships {
-		err := deleteRelationship(ctx, logger, tx, userID, g)
-		if err != nil {
-			return err
-		}
-	}
+//	query := `
+//SELECT id, edge_count, group_edge.state FROM groups
+//JOIN group_edge ON (group_edge.source_id = id)
+//WHERE group_edge.destination_id = $1`
+//
+//	rows, err := tx.QueryContext(ctx, query, userID)
+//	if err != nil {
+//		logger.Debug("Could not list groups for a user.", zap.Error(err), zap.String("user_id", userID.String()))
+//		return err
+//	}
+//
+//	deleteGroupsAndRelationships := make([]uuid.UUID, 0)
+//	deleteRelationships := make([]uuid.UUID, 0)
+//	checkForOtherSuperadmins := make([]uuid.UUID, 0)
+//
+//	for rows.Next() {
+//		var id string
+//		var edgeCount sql.NullInt64
+//		var userState sql.NullInt64
+//
+//		if err := rows.Scan(&id, &edgeCount, &userState); err != nil {
+//			_ = rows.Close()
+//			logger.Error("Could not parse rows when listing groups for a user.", zap.Error(err), zap.String("user_id", userID.String()))
+//			return err
+//		}
+//
+//		groupID := uuid.Must(uuid.FromString(id))
+//		if userState.Int64 == 0 {
+//			if edgeCount.Int64 == 1 {
+//				deleteGroupsAndRelationships = append(deleteGroupsAndRelationships, groupID)
+//			} else {
+//				checkForOtherSuperadmins = append(checkForOtherSuperadmins, groupID)
+//			}
+//		} else {
+//			deleteRelationships = append(deleteRelationships, groupID)
+//		}
+//	}
+//	_ = rows.Close()
+//
+//	countOtherSuperadminsQuery := "SELECT COUNT(source_id) FROM group_edge WHERE source_id = $1 AND destination_id != $2 AND state = 0"
+//	for _, g := range checkForOtherSuperadmins {
+//		var otherSuperadminCount sql.NullInt64
+//		err := tx.QueryRowContext(ctx, countOtherSuperadminsQuery, g, userID).Scan(&otherSuperadminCount)
+//		if err != nil {
+//			logger.Error("Could not parse rows when listing other superadmins.", zap.Error(err), zap.String("group_id", g.String()), zap.String("user_id", userID.String()))
+//			return err
+//		}
+//
+//		if otherSuperadminCount.Int64 == 0 {
+//			deleteGroupsAndRelationships = append(deleteGroupsAndRelationships, g)
+//		} else {
+//			deleteRelationships = append(deleteRelationships, g)
+//		}
+//	}
+//
+//	for _, g := range deleteGroupsAndRelationships {
+//		if err := deleteGroup(ctx, logger, tx, g); err != nil {
+//			return err
+//		}
+//	}
+//
+//	for _, g := range deleteRelationships {
+//		err := deleteRelationship(ctx, logger, tx, userID, g)
+//		if err != nil {
+//			return err
+//		}
+//	}
 
 	return nil
 }
