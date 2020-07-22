@@ -66,8 +66,8 @@ type ApiServer struct {
 	logger               *zap.Logger
 	db                   *sql.DB
 	config               Config
-	leaderboardCache     LeaderboardCache
-	leaderboardRankCache LeaderboardRankCache
+	//leaderboardCache     LeaderboardCache
+	//leaderboardRankCache LeaderboardRankCache
 	matchRegistry        MatchRegistry
 	tracker              Tracker
 	router               MessageRouter
@@ -77,7 +77,7 @@ type ApiServer struct {
 	grpcGatewayServer    *http.Server
 }
 
-func StartApiServer(logger *zap.Logger, startupLogger *zap.Logger, db *sql.DB, jsonpbMarshaler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, config Config, leaderboardCache LeaderboardCache, leaderboardRankCache LeaderboardRankCache, sessionRegistry SessionRegistry, matchRegistry MatchRegistry, matchmaker Matchmaker, tracker Tracker, router MessageRouter, metrics *Metrics, pipeline *Pipeline, runtime *Runtime) *ApiServer {
+func StartApiServer(logger *zap.Logger, startupLogger *zap.Logger, db *sql.DB, jsonpbMarshaler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, config Config, sessionRegistry SessionRegistry, matchRegistry MatchRegistry, matchmaker Matchmaker, tracker Tracker, router MessageRouter, metrics *Metrics, pipeline *Pipeline, runtime *Runtime) *ApiServer {
 	var gatewayContextTimeoutMs string
 	if config.GetSocket().IdleTimeoutMs > 500 {
 		// Ensure the GRPC Gateway timeout is just under the idle timeout (if possible) to ensure it has priority.
@@ -123,8 +123,8 @@ func StartApiServer(logger *zap.Logger, startupLogger *zap.Logger, db *sql.DB, j
 			logger:               logger,
 			db:                   db,
 			config:               config,
-			leaderboardCache:     leaderboardCache,
-			leaderboardRankCache: leaderboardRankCache,
+			//leaderboardCache:     leaderboardCache,
+			//leaderboardRankCache: leaderboardRankCache,
 			matchRegistry:        matchRegistry,
 			tracker:              tracker,
 			router:               router,

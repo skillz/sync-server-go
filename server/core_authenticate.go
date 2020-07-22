@@ -17,76 +17,69 @@ package server
 import (
 	"context"
 	"database/sql"
-	"strings"
-
-	"github.com/gofrs/uuid"
-	"github.com/jackc/pgx"
-	"github.com/jackc/pgx/pgtype"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func AuthenticateCustom(ctx context.Context, logger *zap.Logger, db *sql.DB, customID, username string, create bool) (string, string, bool, error) {
-	found := true
-
-	// Look for an existing account.
-	query := "SELECT id, username, disable_time FROM users WHERE custom_id = $1"
-	var dbUserID string
-	var dbUsername string
-	var dbDisableTime pgtype.Timestamptz
-	err := db.QueryRowContext(ctx, query, customID).Scan(&dbUserID, &dbUsername, &dbDisableTime)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			found = false
-		} else {
-			logger.Error("Error looking up user by custom ID.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
-			return "", "", false, status.Error(codes.Internal, "Error finding user account.")
-		}
-	}
-
-	// Existing account found.
-	if found {
-		// Check if it's disabled.
-		if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
-			logger.Info("User account is disabled.", zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
-			return "", "", false, status.Error(codes.Unauthenticated, "Error finding or creating user account.")
-		}
-
-		return dbUserID, dbUsername, false, nil
-	}
-
-	if !create {
-		// No user account found, and creation is not allowed.
-		return "", "", false, status.Error(codes.NotFound, "User account not found.")
-	}
-
-	// Create a new account.
-	userID := uuid.Must(uuid.NewV4()).String()
-	query = "INSERT INTO users (id, username, custom_id, create_time, update_time) VALUES ($1, $2, $3, now(), now())"
-	result, err := db.ExecContext(ctx, query, userID, username, customID)
-	if err != nil {
-		if e, ok := err.(pgx.PgError); ok && e.Code == dbErrorUniqueViolation {
-			if strings.Contains(e.Message, "users_username_key") {
-				// Username is already in use by a different account.
-				return "", "", false, status.Error(codes.AlreadyExists, "Username is already in use.")
-			} else if strings.Contains(e.Message, "users_custom_id_key") {
-				// A concurrent write has inserted this custom ID.
-				logger.Info("Did not insert new user as custom ID already exists.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
-				return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-			}
-		}
-		logger.Error("Cannot find or create user with custom ID.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
-		return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-	}
-
-	if rowsAffectedCount, _ := result.RowsAffected(); rowsAffectedCount != 1 {
-		logger.Error("Did not insert new user.", zap.Int64("rows_affected", rowsAffectedCount))
-		return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-	}
-
-	return userID, username, true, nil
+	//found := true
+	//
+	//// Look for an existing account.
+	//query := "SELECT id, username, disable_time FROM users WHERE custom_id = $1"
+	//var dbUserID string
+	//var dbUsername string
+	//var dbDisableTime pgtype.Timestamptz
+	//err := db.QueryRowContext(ctx, query, customID).Scan(&dbUserID, &dbUsername, &dbDisableTime)
+	//if err != nil {
+	//	if err == sql.ErrNoRows {
+	//		found = false
+	//	} else {
+	//		logger.Error("Error looking up user by custom ID.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
+	//		return "", "", false, status.Error(codes.Internal, "Error finding user account.")
+	//	}
+	//}
+	//
+	//// Existing account found.
+	//if found {
+	//	// Check if it's disabled.
+	//	if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
+	//		logger.Info("User account is disabled.", zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
+	//		return "", "", false, status.Error(codes.Unauthenticated, "Error finding or creating user account.")
+	//	}
+	//
+	//	return dbUserID, dbUsername, false, nil
+	//}
+	//
+	//if !create {
+	//	// No user account found, and creation is not allowed.
+	//	return "", "", false, status.Error(codes.NotFound, "User account not found.")
+	//}
+	//
+	//// Create a new account.
+	//userID := uuid.Must(uuid.NewV4()).String()
+	//query = "INSERT INTO users (id, username, custom_id, create_time, update_time) VALUES ($1, $2, $3, now(), now())"
+	//result, err := db.ExecContext(ctx, query, userID, username, customID)
+	//if err != nil {
+	//	if e, ok := err.(pgx.PgError); ok && e.Code == dbErrorUniqueViolation {
+	//		if strings.Contains(e.Message, "users_username_key") {
+	//			// Username is already in use by a different account.
+	//			return "", "", false, status.Error(codes.AlreadyExists, "Username is already in use.")
+	//		} else if strings.Contains(e.Message, "users_custom_id_key") {
+	//			// A concurrent write has inserted this custom ID.
+	//			logger.Info("Did not insert new user as custom ID already exists.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
+	//			return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//		}
+	//	}
+	//	logger.Error("Cannot find or create user with custom ID.", zap.Error(err), zap.String("customID", customID), zap.String("username", username), zap.Bool("create", create))
+	//	return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//}
+	//
+	//if rowsAffectedCount, _ := result.RowsAffected(); rowsAffectedCount != 1 {
+	//	logger.Error("Did not insert new user.", zap.Int64("rows_affected", rowsAffectedCount))
+	//	return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//}
+	//
+	//return userID, username, true, nil
+	return "", "", false, nil
 }
 
 func AuthenticateDevice(ctx context.Context, logger *zap.Logger, db *sql.DB, deviceID, username string, create bool) (string, string, bool, error) {
@@ -197,111 +190,112 @@ func AuthenticateDevice(ctx context.Context, logger *zap.Logger, db *sql.DB, dev
 }
 
 func AuthenticateEmail(ctx context.Context, logger *zap.Logger, db *sql.DB, email, password, username string, create bool) (string, string, bool, error) {
-	found := true
-
-	// Look for an existing account.
-	query := "SELECT id, username, password, disable_time FROM users WHERE email = $1"
-	var dbUserID string
-	var dbUsername string
-	var dbPassword []byte
-	var dbDisableTime pgtype.Timestamptz
-	err := db.QueryRowContext(ctx, query, email).Scan(&dbUserID, &dbUsername, &dbPassword, &dbDisableTime)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			found = false
-		} else {
-			logger.Error("Error looking up user by email.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
-			return "", "", false, status.Error(codes.Internal, "Error finding user account.")
-		}
-	}
-
-	// Existing account found.
-	if found {
-		// Check if it's disabled.
-		if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
-			logger.Info("User account is disabled.", zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
-			return "", "", false, status.Error(codes.Unauthenticated, "Error finding or creating user account.")
-		}
-
-		// Check if password matches.
-		err = bcrypt.CompareHashAndPassword(dbPassword, []byte(password))
-		if err != nil {
-			return "", "", false, status.Error(codes.Unauthenticated, "Invalid credentials.")
-		}
-
-		return dbUserID, dbUsername, false, nil
-	}
-
-	if !create {
-		// No user account found, and creation is not allowed.
-		return "", "", false, status.Error(codes.NotFound, "User account not found.")
-	}
-
-	// Create a new account.
-	userID := uuid.Must(uuid.NewV4()).String()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		logger.Error("Error hashing password.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
-		return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-	}
-	query = "INSERT INTO users (id, username, email, password, create_time, update_time) VALUES ($1, $2, $3, $4, now(), now())"
-	result, err := db.ExecContext(ctx, query, userID, username, email, hashedPassword)
-	if err != nil {
-		if e, ok := err.(pgx.PgError); ok && e.Code == dbErrorUniqueViolation {
-			if strings.Contains(e.Message, "users_username_key") {
-				// Username is already in use by a different account.
-				return "", "", false, status.Error(codes.AlreadyExists, "Username is already in use.")
-			} else if strings.Contains(e.Message, "users_email_key") {
-				// A concurrent write has inserted this email.
-				logger.Info("Did not insert new user as email already exists.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
-				return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-			}
-		}
-		logger.Error("Cannot find or create user with email.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
-		return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-	}
-
-	if rowsAffectedCount, _ := result.RowsAffected(); rowsAffectedCount != 1 {
-		logger.Error("Did not insert new user.", zap.Int64("rows_affected", rowsAffectedCount))
-		return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
-	}
-
-	return userID, username, true, nil
+	//found := true
+	//
+	//// Look for an existing account.
+	//query := "SELECT id, username, password, disable_time FROM users WHERE email = $1"
+	//var dbUserID string
+	//var dbUsername string
+	//var dbPassword []byte
+	//var dbDisableTime pgtype.Timestamptz
+	//err := db.QueryRowContext(ctx, query, email).Scan(&dbUserID, &dbUsername, &dbPassword, &dbDisableTime)
+	//if err != nil {
+	//	if err == sql.ErrNoRows {
+	//		found = false
+	//	} else {
+	//		logger.Error("Error looking up user by email.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
+	//		return "", "", false, status.Error(codes.Internal, "Error finding user account.")
+	//	}
+	//}
+	//
+	//// Existing account found.
+	//if found {
+	//	// Check if it's disabled.
+	//	if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
+	//		logger.Info("User account is disabled.", zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
+	//		return "", "", false, status.Error(codes.Unauthenticated, "Error finding or creating user account.")
+	//	}
+	//
+	//	// Check if password matches.
+	//	err = bcrypt.CompareHashAndPassword(dbPassword, []byte(password))
+	//	if err != nil {
+	//		return "", "", false, status.Error(codes.Unauthenticated, "Invalid credentials.")
+	//	}
+	//
+	//	return dbUserID, dbUsername, false, nil
+	//}
+	//
+	//if !create {
+	//	// No user account found, and creation is not allowed.
+	//	return "", "", false, status.Error(codes.NotFound, "User account not found.")
+	//}
+	//
+	//// Create a new account.
+	//userID := uuid.Must(uuid.NewV4()).String()
+	//hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	//if err != nil {
+	//	logger.Error("Error hashing password.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
+	//	return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//}
+	//query = "INSERT INTO users (id, username, email, password, create_time, update_time) VALUES ($1, $2, $3, $4, now(), now())"
+	//result, err := db.ExecContext(ctx, query, userID, username, email, hashedPassword)
+	//if err != nil {
+	//	if e, ok := err.(pgx.PgError); ok && e.Code == dbErrorUniqueViolation {
+	//		if strings.Contains(e.Message, "users_username_key") {
+	//			// Username is already in use by a different account.
+	//			return "", "", false, status.Error(codes.AlreadyExists, "Username is already in use.")
+	//		} else if strings.Contains(e.Message, "users_email_key") {
+	//			// A concurrent write has inserted this email.
+	//			logger.Info("Did not insert new user as email already exists.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
+	//			return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//		}
+	//	}
+	//	logger.Error("Cannot find or create user with email.", zap.Error(err), zap.String("email", email), zap.String("username", username), zap.Bool("create", create))
+	//	return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//}
+	//
+	//if rowsAffectedCount, _ := result.RowsAffected(); rowsAffectedCount != 1 {
+	//	logger.Error("Did not insert new user.", zap.Int64("rows_affected", rowsAffectedCount))
+	//	return "", "", false, status.Error(codes.Internal, "Error finding or creating user account.")
+	//}
+	//
+	//return userID, username, true, nil
+	return "", "", false, nil
 }
 
-func AuthenticateUsername(ctx context.Context, logger *zap.Logger, db *sql.DB, username, password string) (string, error) {
-	// Look for an existing account.
-	query := "SELECT id, password, disable_time FROM users WHERE username = $1"
-	var dbUserID string
-	var dbPassword []byte
-	var dbDisableTime pgtype.Timestamptz
-	err := db.QueryRowContext(ctx, query, username).Scan(&dbUserID, &dbPassword, &dbDisableTime)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			// Account not found and creation is never allowed for this type.
-			return "", status.Error(codes.NotFound, "User account not found.")
-		}
-		logger.Error("Error looking up user by username.", zap.Error(err), zap.String("username", username))
-		return "", status.Error(codes.Internal, "Error finding user account.")
-	}
-
-	// Check if it's disabled.
-	if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
-		logger.Info("User account is disabled.", zap.String("username", username))
-		return "", status.Error(codes.Unauthenticated, "Error finding or creating user account.")
-	}
-
-	// Check if the account has a password.
-	if len(dbPassword) == 0 {
-		// Do not disambiguate between bad password and password login not possible at all in client-facing error messages.
-		return "", status.Error(codes.Unauthenticated, "Invalid credentials.")
-	}
-
-	// Check if password matches.
-	err = bcrypt.CompareHashAndPassword(dbPassword, []byte(password))
-	if err != nil {
-		return "", status.Error(codes.Unauthenticated, "Invalid credentials.")
-	}
-
-	return dbUserID, nil
-}
+//func AuthenticateUsername(ctx context.Context, logger *zap.Logger, db *sql.DB, username, password string) (string, error) {
+//	// Look for an existing account.
+//	query := "SELECT id, password, disable_time FROM users WHERE username = $1"
+//	var dbUserID string
+//	var dbPassword []byte
+//	var dbDisableTime pgtype.Timestamptz
+//	err := db.QueryRowContext(ctx, query, username).Scan(&dbUserID, &dbPassword, &dbDisableTime)
+//	if err != nil {
+//		if err == sql.ErrNoRows {
+//			// Account not found and creation is never allowed for this type.
+//			return "", status.Error(codes.NotFound, "User account not found.")
+//		}
+//		logger.Error("Error looking up user by username.", zap.Error(err), zap.String("username", username))
+//		return "", status.Error(codes.Internal, "Error finding user account.")
+//	}
+//
+//	// Check if it's disabled.
+//	if dbDisableTime.Status == pgtype.Present && dbDisableTime.Time.Unix() != 0 {
+//		logger.Info("User account is disabled.", zap.String("username", username))
+//		return "", status.Error(codes.Unauthenticated, "Error finding or creating user account.")
+//	}
+//
+//	// Check if the account has a password.
+//	if len(dbPassword) == 0 {
+//		// Do not disambiguate between bad password and password login not possible at all in client-facing error messages.
+//		return "", status.Error(codes.Unauthenticated, "Invalid credentials.")
+//	}
+//
+//	// Check if password matches.
+//	err = bcrypt.CompareHashAndPassword(dbPassword, []byte(password))
+//	if err != nil {
+//		return "", status.Error(codes.Unauthenticated, "Invalid credentials.")
+//	}
+//
+//	return dbUserID, nil
+//}

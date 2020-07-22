@@ -121,7 +121,8 @@ func (p *Pipeline) channelJoin(logger *zap.Logger, session Session, envelope *rt
 			return
 		}
 		// Check if the other user exists and has not blocked this user.
-		allowed, err := UserExistsAndDoesNotBlock(session.Context(), p.db, uid, userID)
+		// TODO
+		allowed, err := true, nil //UserExistsAndDoesNotBlock(session.Context(), p.db, uid, userID)
 		if err != nil {
 			logger.Warn("Failed to execute query to check user and friend block state", zap.Error(err), zap.String("uid", userID.String()), zap.String("friend", uid.String()))
 			session.Send(&rtapi.Envelope{Cid: envelope.Cid, Message: &rtapi.Envelope_Error{Error: &rtapi.Error{
@@ -156,7 +157,8 @@ func (p *Pipeline) channelJoin(logger *zap.Logger, session Session, envelope *rt
 			}}}, true)
 			return
 		}
-		allowed, err := groupCheckUserPermission(session.Context(), logger, p.db, gid, session.UserID(), 2)
+		// TODO
+		allowed, err := true, nil //groupCheckUserPermission(session.Context(), logger, p.db, gid, session.UserID(), 2)
 		if err != nil {
 			session.Send(&rtapi.Envelope{Cid: envelope.Cid, Message: &rtapi.Envelope_Error{Error: &rtapi.Error{
 				Code:    int32(rtapi.Error_RUNTIME_EXCEPTION),

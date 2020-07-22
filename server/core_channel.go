@@ -15,22 +15,17 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/base64"
-	"encoding/gob"
 	"fmt"
-	"strings"
-	"time"
-
+	"github.com/aaron-skillz/sync-server-go/api"
 	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/aaron-skillz/sync-server-go/api"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"strings"
 )
 
 var (
@@ -56,188 +51,189 @@ type channelMessageListCursor struct {
 }
 
 func ChannelMessagesList(ctx context.Context, logger *zap.Logger, db *sql.DB, caller uuid.UUID, stream PresenceStream, channelID string, limit int, forward bool, cursor string) (*api.ChannelMessageList, error) {
-	var incomingCursor *channelMessageListCursor
-	if cursor != "" {
-		cb, err := base64.StdEncoding.DecodeString(cursor)
-		if err != nil {
-			return nil, ErrChannelCursorInvalid
-		}
-		incomingCursor = &channelMessageListCursor{}
-		if err := gob.NewDecoder(bytes.NewReader(cb)).Decode(incomingCursor); err != nil {
-			return nil, ErrChannelCursorInvalid
-		}
-
-		if forward != incomingCursor.Forward {
-			// Cursor is for a different channel message list direction.
-			return nil, ErrChannelCursorInvalid
-		} else if stream.Mode != incomingCursor.StreamMode {
-			// Stream mode does not match.
-			return nil, ErrChannelCursorInvalid
-		} else if stream.Subject.String() != incomingCursor.StreamSubject {
-			// Stream subject does not match.
-			return nil, ErrChannelCursorInvalid
-		} else if stream.Subcontext.String() != incomingCursor.StreamSubcontext {
-			// Stream subcontext does not match.
-			return nil, ErrChannelCursorInvalid
-		} else if stream.Label != incomingCursor.StreamLabel {
-			// Stream label does not match.
-			return nil, ErrChannelCursorInvalid
-		}
-	}
-
-	// If it's a group, check membership.
-	if caller != uuid.Nil && stream.Mode == StreamModeGroup {
-		allowed, err := groupCheckUserPermission(ctx, logger, db, stream.Subject, caller, 2)
-		if err != nil {
-			return nil, err
-		}
-		if !allowed {
-			return nil, ErrChannelGroupNotFound
-		}
-	}
-
-	query := `SELECT id, code, sender_id, username, content, create_time, update_time FROM message
-WHERE stream_mode = $1 AND stream_subject = $2::UUID AND stream_descriptor = $3::UUID AND stream_label = $4`
-	if incomingCursor == nil {
-		if forward {
-			query += " ORDER BY create_time ASC, id ASC"
-		} else {
-			query += " ORDER BY create_time DESC, id DESC"
-		}
-	} else {
-		if (forward && incomingCursor.IsNext) || (!forward && !incomingCursor.IsNext) {
-			// Forward and next page == backwards and previous page.
-			query += " AND (stream_mode, stream_subject, stream_descriptor, stream_label, create_time, id) > ($1, $2::UUID, $3::UUID, $4, $6, $7) ORDER BY create_time ASC, id ASC"
-		} else {
-			// Forward and previous page == backwards and next page.
-			query += " AND (stream_mode, stream_subject, stream_descriptor, stream_label, create_time, id) < ($1, $2::UUID, $3::UUID, $4, $6, $7) ORDER BY create_time DESC, id DESC"
-		}
-	}
-	query += " LIMIT $5"
-	params := []interface{}{stream.Mode, stream.Subject, stream.Subcontext, stream.Label, limit + 1}
-	if incomingCursor != nil {
-		params = append(params, time.Unix(incomingCursor.CreateTime, 0).UTC(), incomingCursor.Id)
-	}
-
-	rows, err := db.QueryContext(ctx, query, params...)
-	if err != nil {
-		logger.Error("Error listing channel messages", zap.Error(err))
-		return nil, err
-	}
-
-	groupID := stream.Subject.String()
-	userIDOne := stream.Subject.String()
-	userIDTwo := stream.Subcontext.String()
-	messages := make([]*api.ChannelMessage, 0, limit)
-	var nextCursor, prevCursor *channelMessageListCursor
-
-	var dbID string
-	var dbCode int32
-	var dbSenderID string
-	var dbUsername string
-	var dbContent string
-	var dbCreateTime pgtype.Timestamptz
-	var dbUpdateTime pgtype.Timestamptz
-	for rows.Next() {
-		if len(messages) >= limit {
-			nextCursor = &channelMessageListCursor{
-				StreamMode:       stream.Mode,
-				StreamSubject:    stream.Subject.String(),
-				StreamSubcontext: stream.Subcontext.String(),
-				StreamLabel:      stream.Label,
-				CreateTime:       dbCreateTime.Time.Unix(),
-				Id:               dbID,
-				Forward:          forward,
-				IsNext:           true,
-			}
-			break
-		}
-
-		err = rows.Scan(&dbID, &dbCode, &dbSenderID, &dbUsername, &dbContent, &dbCreateTime, &dbUpdateTime)
-		if err != nil {
-			_ = rows.Close()
-			logger.Error("Error parsing listed channel messages", zap.Error(err))
-			return nil, err
-		}
-
-		message := &api.ChannelMessage{
-			ChannelId:  channelID,
-			MessageId:  dbID,
-			Code:       &wrappers.Int32Value{Value: dbCode},
-			SenderId:   dbSenderID,
-			Username:   dbUsername,
-			Content:    dbContent,
-			CreateTime: &timestamp.Timestamp{Seconds: dbCreateTime.Time.Unix()},
-			UpdateTime: &timestamp.Timestamp{Seconds: dbUpdateTime.Time.Unix()},
-			Persistent: &wrappers.BoolValue{Value: true},
-		}
-		switch stream.Mode {
-		case StreamModeChannel:
-			message.RoomName = stream.Label
-		case StreamModeGroup:
-			message.GroupId = groupID
-		case StreamModeDM:
-			message.UserIdOne = userIDOne
-			message.UserIdTwo = userIDTwo
-		}
-
-		messages = append(messages, message)
-
-		// There can only be a previous page if this is a paginated listing.
-		if incomingCursor != nil && prevCursor == nil {
-			prevCursor = &channelMessageListCursor{
-				StreamMode:       stream.Mode,
-				StreamSubject:    stream.Subject.String(),
-				StreamSubcontext: stream.Subcontext.String(),
-				StreamLabel:      stream.Label,
-				CreateTime:       dbCreateTime.Time.Unix(),
-				Id:               dbID,
-				Forward:          forward,
-				IsNext:           false,
-			}
-		}
-	}
-	_ = rows.Close()
-
-	if incomingCursor != nil && !incomingCursor.IsNext {
-		// If this was a previous page listing, flip the results to their normal order and swap the cursors.
-		nextCursor, prevCursor = prevCursor, nextCursor
-		if nextCursor != nil {
-			nextCursor.IsNext = !nextCursor.IsNext
-		}
-		if prevCursor != nil {
-			prevCursor.IsNext = !prevCursor.IsNext
-		}
-
-		for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
-			messages[i], messages[j] = messages[j], messages[i]
-		}
-	}
-
-	var nextCursorStr string
-	if nextCursor != nil {
-		cursorBuf := new(bytes.Buffer)
-		if err := gob.NewEncoder(cursorBuf).Encode(nextCursor); err != nil {
-			logger.Error("Error creating channel messages list next cursor", zap.Error(err))
-			return nil, err
-		}
-		nextCursorStr = base64.StdEncoding.EncodeToString(cursorBuf.Bytes())
-	}
-	var prevCursorStr string
-	if prevCursor != nil {
-		cursorBuf := new(bytes.Buffer)
-		if err := gob.NewEncoder(cursorBuf).Encode(prevCursor); err != nil {
-			logger.Error("Error creating channel messages list previous cursor", zap.Error(err))
-			return nil, err
-		}
-		prevCursorStr = base64.StdEncoding.EncodeToString(cursorBuf.Bytes())
-	}
-
-	return &api.ChannelMessageList{
-		Messages:   messages,
-		NextCursor: nextCursorStr,
-		PrevCursor: prevCursorStr,
-	}, nil
+//	var incomingCursor *channelMessageListCursor
+//	if cursor != "" {
+//		cb, err := base64.StdEncoding.DecodeString(cursor)
+//		if err != nil {
+//			return nil, ErrChannelCursorInvalid
+//		}
+//		incomingCursor = &channelMessageListCursor{}
+//		if err := gob.NewDecoder(bytes.NewReader(cb)).Decode(incomingCursor); err != nil {
+//			return nil, ErrChannelCursorInvalid
+//		}
+//
+//		if forward != incomingCursor.Forward {
+//			// Cursor is for a different channel message list direction.
+//			return nil, ErrChannelCursorInvalid
+//		} else if stream.Mode != incomingCursor.StreamMode {
+//			// Stream mode does not match.
+//			return nil, ErrChannelCursorInvalid
+//		} else if stream.Subject.String() != incomingCursor.StreamSubject {
+//			// Stream subject does not match.
+//			return nil, ErrChannelCursorInvalid
+//		} else if stream.Subcontext.String() != incomingCursor.StreamSubcontext {
+//			// Stream subcontext does not match.
+//			return nil, ErrChannelCursorInvalid
+//		} else if stream.Label != incomingCursor.StreamLabel {
+//			// Stream label does not match.
+//			return nil, ErrChannelCursorInvalid
+//		}
+//	}
+//
+//	// If it's a group, check membership.
+//	if caller != uuid.Nil && stream.Mode == StreamModeGroup {
+//		allowed, err := groupCheckUserPermission(ctx, logger, db, stream.Subject, caller, 2)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if !allowed {
+//			return nil, ErrChannelGroupNotFound
+//		}
+//	}
+//
+//	query := `SELECT id, code, sender_id, username, content, create_time, update_time FROM message
+//WHERE stream_mode = $1 AND stream_subject = $2::UUID AND stream_descriptor = $3::UUID AND stream_label = $4`
+//	if incomingCursor == nil {
+//		if forward {
+//			query += " ORDER BY create_time ASC, id ASC"
+//		} else {
+//			query += " ORDER BY create_time DESC, id DESC"
+//		}
+//	} else {
+//		if (forward && incomingCursor.IsNext) || (!forward && !incomingCursor.IsNext) {
+//			// Forward and next page == backwards and previous page.
+//			query += " AND (stream_mode, stream_subject, stream_descriptor, stream_label, create_time, id) > ($1, $2::UUID, $3::UUID, $4, $6, $7) ORDER BY create_time ASC, id ASC"
+//		} else {
+//			// Forward and previous page == backwards and next page.
+//			query += " AND (stream_mode, stream_subject, stream_descriptor, stream_label, create_time, id) < ($1, $2::UUID, $3::UUID, $4, $6, $7) ORDER BY create_time DESC, id DESC"
+//		}
+//	}
+//	query += " LIMIT $5"
+//	params := []interface{}{stream.Mode, stream.Subject, stream.Subcontext, stream.Label, limit + 1}
+//	if incomingCursor != nil {
+//		params = append(params, time.Unix(incomingCursor.CreateTime, 0).UTC(), incomingCursor.Id)
+//	}
+//
+//	rows, err := db.QueryContext(ctx, query, params...)
+//	if err != nil {
+//		logger.Error("Error listing channel messages", zap.Error(err))
+//		return nil, err
+//	}
+//
+//	groupID := stream.Subject.String()
+//	userIDOne := stream.Subject.String()
+//	userIDTwo := stream.Subcontext.String()
+//	messages := make([]*api.ChannelMessage, 0, limit)
+//	var nextCursor, prevCursor *channelMessageListCursor
+//
+//	var dbID string
+//	var dbCode int32
+//	var dbSenderID string
+//	var dbUsername string
+//	var dbContent string
+//	var dbCreateTime pgtype.Timestamptz
+//	var dbUpdateTime pgtype.Timestamptz
+//	for rows.Next() {
+//		if len(messages) >= limit {
+//			nextCursor = &channelMessageListCursor{
+//				StreamMode:       stream.Mode,
+//				StreamSubject:    stream.Subject.String(),
+//				StreamSubcontext: stream.Subcontext.String(),
+//				StreamLabel:      stream.Label,
+//				CreateTime:       dbCreateTime.Time.Unix(),
+//				Id:               dbID,
+//				Forward:          forward,
+//				IsNext:           true,
+//			}
+//			break
+//		}
+//
+//		err = rows.Scan(&dbID, &dbCode, &dbSenderID, &dbUsername, &dbContent, &dbCreateTime, &dbUpdateTime)
+//		if err != nil {
+//			_ = rows.Close()
+//			logger.Error("Error parsing listed channel messages", zap.Error(err))
+//			return nil, err
+//		}
+//
+//		message := &api.ChannelMessage{
+//			ChannelId:  channelID,
+//			MessageId:  dbID,
+//			Code:       &wrappers.Int32Value{Value: dbCode},
+//			SenderId:   dbSenderID,
+//			Username:   dbUsername,
+//			Content:    dbContent,
+//			CreateTime: &timestamp.Timestamp{Seconds: dbCreateTime.Time.Unix()},
+//			UpdateTime: &timestamp.Timestamp{Seconds: dbUpdateTime.Time.Unix()},
+//			Persistent: &wrappers.BoolValue{Value: true},
+//		}
+//		switch stream.Mode {
+//		case StreamModeChannel:
+//			message.RoomName = stream.Label
+//		case StreamModeGroup:
+//			message.GroupId = groupID
+//		case StreamModeDM:
+//			message.UserIdOne = userIDOne
+//			message.UserIdTwo = userIDTwo
+//		}
+//
+//		messages = append(messages, message)
+//
+//		// There can only be a previous page if this is a paginated listing.
+//		if incomingCursor != nil && prevCursor == nil {
+//			prevCursor = &channelMessageListCursor{
+//				StreamMode:       stream.Mode,
+//				StreamSubject:    stream.Subject.String(),
+//				StreamSubcontext: stream.Subcontext.String(),
+//				StreamLabel:      stream.Label,
+//				CreateTime:       dbCreateTime.Time.Unix(),
+//				Id:               dbID,
+//				Forward:          forward,
+//				IsNext:           false,
+//			}
+//		}
+//	}
+//	_ = rows.Close()
+//
+//	if incomingCursor != nil && !incomingCursor.IsNext {
+//		// If this was a previous page listing, flip the results to their normal order and swap the cursors.
+//		nextCursor, prevCursor = prevCursor, nextCursor
+//		if nextCursor != nil {
+//			nextCursor.IsNext = !nextCursor.IsNext
+//		}
+//		if prevCursor != nil {
+//			prevCursor.IsNext = !prevCursor.IsNext
+//		}
+//
+//		for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+//			messages[i], messages[j] = messages[j], messages[i]
+//		}
+//	}
+//
+//	var nextCursorStr string
+//	if nextCursor != nil {
+//		cursorBuf := new(bytes.Buffer)
+//		if err := gob.NewEncoder(cursorBuf).Encode(nextCursor); err != nil {
+//			logger.Error("Error creating channel messages list next cursor", zap.Error(err))
+//			return nil, err
+//		}
+//		nextCursorStr = base64.StdEncoding.EncodeToString(cursorBuf.Bytes())
+//	}
+//	var prevCursorStr string
+//	if prevCursor != nil {
+//		cursorBuf := new(bytes.Buffer)
+//		if err := gob.NewEncoder(cursorBuf).Encode(prevCursor); err != nil {
+//			logger.Error("Error creating channel messages list previous cursor", zap.Error(err))
+//			return nil, err
+//		}
+//		prevCursorStr = base64.StdEncoding.EncodeToString(cursorBuf.Bytes())
+//	}
+//
+//	return &api.ChannelMessageList{
+//		Messages:   messages,
+//		NextCursor: nextCursorStr,
+//		PrevCursor: prevCursorStr,
+//	}, nil
+	return nil, nil
 }
 
 func GetChannelMessages(ctx context.Context, logger *zap.Logger, db *sql.DB, userID uuid.UUID) ([]*api.ChannelMessage, error) {

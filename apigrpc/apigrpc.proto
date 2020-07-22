@@ -24,8 +24,7 @@ import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 import "api/api.proto";
 
-option go_package = "apigrpc";
-
+option go_package = "github.com/aaron-skillz/sync-server-go/apigrpc";
 option java_multiple_files = true;
 option java_outer_classname = "NakamaApiGrpc";
 option java_package = "com.heroiclabs.nakama.api";
@@ -36,12 +35,12 @@ option objc_class_prefix = "NKPB";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
   info: {
-    title: "Nakama API v2";
+    title: "Server API v2";
     version: "2.0";
     contact: {
-      name: "The Nakama Authors & Contributors";
-      url: "https://github.com/heroiclabs/nakama";
-      email: "hello@heroiclabs.com";
+      name: "Aaron GitHub aaronj3.14";
+      url: "https://github.com/aaronj314/sync";
+      email: "aaron@pwned.io";
     };
   };
   host: "127.0.0.1:7350";
@@ -89,14 +88,14 @@ option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
  */
 service Nakama {
   // Add friends by ID or username to a user's account.
-  rpc AddFriends (api.AddFriendsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/friend";
-  }
+//  rpc AddFriends (api.AddFriendsRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/friend";
+//  }
 
   // Add users to a group.
-  rpc AddGroupUsers (api.AddGroupUsersRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/add";
-  }
+//  rpc AddGroupUsers (api.AddGroupUsersRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/add";
+//  }
 
   // Authenticate a user with a custom id against the server.
   rpc AuthenticateCustom (api.AuthenticateCustomRequest) returns (api.Session) {
@@ -146,40 +145,40 @@ service Nakama {
     };
   }
 
-  // Ban a set of users from a group.
-  rpc BanGroupUsers (api.BanGroupUsersRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/ban";
-  }
-
-  // Block one or more users by ID or username.
-  rpc BlockFriends (api.BlockFriendsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v2/friend/block"
-    };
-  }
+//  // Ban a set of users from a group.
+//  rpc BanGroupUsers (api.BanGroupUsersRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/ban";
+//  }
+//
+//  // Block one or more users by ID or username.
+//  rpc BlockFriends (api.BlockFriendsRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http) = {
+//      post: "/v2/friend/block"
+//    };
+//  }
 
   // Create a new group with the current user as the owner.
-  rpc CreateGroup (api.CreateGroupRequest) returns (api.Group) {
-    option (google.api.http) = {
-      post: "/v2/group",
-      body: "*"
-    };
-  }
+//  rpc CreateGroup (api.CreateGroupRequest) returns (api.Group) {
+//    option (google.api.http) = {
+//      post: "/v2/group",
+//      body: "*"
+//    };
+//  }
 
   // Delete one or more users by ID or username.
-  rpc DeleteFriends (api.DeleteFriendsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).delete = "/v2/friend";
-  }
-
-  // Delete a group by ID.
-  rpc DeleteGroup (api.DeleteGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).delete = "/v2/group/{group_id}";
-  }
+//  rpc DeleteFriends (api.DeleteFriendsRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).delete = "/v2/friend";
+//  }
+//
+//  // Delete a group by ID.
+//  rpc DeleteGroup (api.DeleteGroupRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).delete = "/v2/group/{group_id}";
+//  }
 
   // Delete a leaderboard record.
-  rpc DeleteLeaderboardRecord (api.DeleteLeaderboardRecordRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).delete = "/v2/leaderboard/{leaderboard_id}";
-  }
+//  rpc DeleteLeaderboardRecord (api.DeleteLeaderboardRecordRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).delete = "/v2/leaderboard/{leaderboard_id}";
+//  }
 
   // Delete one or more notifications for the current user.
   rpc DeleteNotifications (api.DeleteNotificationsRequest) returns (google.protobuf.Empty) {
@@ -187,12 +186,12 @@ service Nakama {
   }
 
   // Delete one or more objects by ID or username.
-  rpc DeleteStorageObjects (api.DeleteStorageObjectsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      put: "/v2/storage/delete",
-      body: "*"
-    };
-  }
+//  rpc DeleteStorageObjects (api.DeleteStorageObjectsRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http) = {
+//      put: "/v2/storage/delete",
+//      body: "*"
+//    };
+//  }
 
   // Submit an event for processing in the server's registered runtime custom events handler.
   rpc Event (api.Event) returns (google.protobuf.Empty) {
@@ -203,14 +202,14 @@ service Nakama {
   }
 
   // Fetch the current user's account.
-  rpc GetAccount (google.protobuf.Empty) returns (api.Account) {
-    option (google.api.http).get = "/v2/account";
-  }
+//  rpc GetAccount (google.protobuf.Empty) returns (api.Account) {
+//    option (google.api.http).get = "/v2/account";
+//  }
 
   // Fetch zero or more users by ID and/or username.
-  rpc GetUsers (api.GetUsersRequest) returns (api.Users) {
-    option (google.api.http).get = "/v2/user";
-  }
+//  rpc GetUsers (api.GetUsersRequest) returns (api.Users) {
+//    option (google.api.http).get = "/v2/user";
+//  }
 
   // A healthcheck which load balancers can use to check the service.
   rpc Healthcheck (google.protobuf.Empty) returns (google.protobuf.Empty) {
@@ -226,24 +225,24 @@ service Nakama {
 //  }
 
   // Immediately join an open group, or request to join a closed one.
-  rpc JoinGroup (api.JoinGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/join";
-  }
+//  rpc JoinGroup (api.JoinGroupRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/join";
+//  }
 
   // Attempt to join an open and running tournament.
-  rpc JoinTournament (api.JoinTournamentRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/tournament/{tournament_id}/join";
-  }
+//  rpc JoinTournament (api.JoinTournamentRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/tournament/{tournament_id}/join";
+//  }
 
   // Kick a set of users from a group.
-  rpc KickGroupUsers (api.KickGroupUsersRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/kick";
-  }
-
-  // Leave a group the user is a member of.
-  rpc LeaveGroup (api.LeaveGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/leave";
-  }
+//  rpc KickGroupUsers (api.KickGroupUsersRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/kick";
+//  }
+//
+//  // Leave a group the user is a member of.
+//  rpc LeaveGroup (api.LeaveGroupRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/leave";
+//  }
 
   // Add a custom ID to the social profiles on the current user's account.
   rpc LinkCustom (api.AccountCustom) returns (google.protobuf.Empty) {
@@ -275,29 +274,29 @@ service Nakama {
   }
 
   // List all friends for the current user.
-  rpc ListFriends (api.ListFriendsRequest) returns (api.FriendList) {
-    option (google.api.http).get = "/v2/friend";
-  }
+//  rpc ListFriends (api.ListFriendsRequest) returns (api.FriendList) {
+//    option (google.api.http).get = "/v2/friend";
+//  }
 
   // List groups based on given filters.
-  rpc ListGroups (api.ListGroupsRequest) returns (api.GroupList) {
-    option (google.api.http).get = "/v2/group";
-  }
-
-  // List all users that are part of a group.
-  rpc ListGroupUsers (api.ListGroupUsersRequest) returns (api.GroupUserList) {
-    option (google.api.http).get = "/v2/group/{group_id}/user";
-  }
+//  rpc ListGroups (api.ListGroupsRequest) returns (api.GroupList) {
+//    option (google.api.http).get = "/v2/group";
+//  }
+//
+//  // List all users that are part of a group.
+//  rpc ListGroupUsers (api.ListGroupUsersRequest) returns (api.GroupUserList) {
+//    option (google.api.http).get = "/v2/group/{group_id}/user";
+//  }
 
   // List leaderboard records.
-  rpc ListLeaderboardRecords (api.ListLeaderboardRecordsRequest) returns (api.LeaderboardRecordList) {
-    option (google.api.http).get = "/v2/leaderboard/{leaderboard_id}";
-  }
+//  rpc ListLeaderboardRecords (api.ListLeaderboardRecordsRequest) returns (api.LeaderboardRecordList) {
+//    option (google.api.http).get = "/v2/leaderboard/{leaderboard_id}";
+//  }
 
   // List leaderboard records that belong to a user.
-  rpc ListLeaderboardRecordsAroundOwner (api.ListLeaderboardRecordsAroundOwnerRequest) returns (api.LeaderboardRecordList) {
-    option (google.api.http).get = "/v2/leaderboard/{leaderboard_id}/owner/{owner_id}";
-  }
+//  rpc ListLeaderboardRecordsAroundOwner (api.ListLeaderboardRecordsAroundOwnerRequest) returns (api.LeaderboardRecordList) {
+//    option (google.api.http).get = "/v2/leaderboard/{leaderboard_id}/owner/{owner_id}";
+//  }
 
   // Fetch list of running matches.
   rpc ListMatches (api.ListMatchesRequest) returns (api.MatchList) {
@@ -310,47 +309,47 @@ service Nakama {
   }
 
   // List publicly readable storage objects in a given collection.
-  rpc ListStorageObjects (api.ListStorageObjectsRequest) returns (api.StorageObjectList) {
-    option (google.api.http) = {
-      get: "/v2/storage/{collection}",
-      additional_bindings {
-        get: "/v2/storage/{collection}/{user_id}"
-      }
-    };
-  }
+//  rpc ListStorageObjects (api.ListStorageObjectsRequest) returns (api.StorageObjectList) {
+//    option (google.api.http) = {
+//      get: "/v2/storage/{collection}",
+//      additional_bindings {
+//        get: "/v2/storage/{collection}/{user_id}"
+//      }
+//    };
+//  }
 
   // List current or upcoming tournaments.
-  rpc ListTournaments (api.ListTournamentsRequest) returns (api.TournamentList) {
-    option (google.api.http).get = "/v2/tournament";
-  }
+//  rpc ListTournaments (api.ListTournamentsRequest) returns (api.TournamentList) {
+//    option (google.api.http).get = "/v2/tournament";
+//  }
 
   // List tournament records.
-  rpc ListTournamentRecords (api.ListTournamentRecordsRequest) returns (api.TournamentRecordList) {
-    option (google.api.http).get = "/v2/tournament/{tournament_id}";
-  }
+//  rpc ListTournamentRecords (api.ListTournamentRecordsRequest) returns (api.TournamentRecordList) {
+//    option (google.api.http).get = "/v2/tournament/{tournament_id}";
+//  }
 
   // List tournament records for a given owner.
-  rpc ListTournamentRecordsAroundOwner (api.ListTournamentRecordsAroundOwnerRequest) returns (api.TournamentRecordList) {
-    option (google.api.http).get = "/v2/tournament/{tournament_id}/owner/{owner_id}";
-  }
+//  rpc ListTournamentRecordsAroundOwner (api.ListTournamentRecordsAroundOwnerRequest) returns (api.TournamentRecordList) {
+//    option (google.api.http).get = "/v2/tournament/{tournament_id}/owner/{owner_id}";
+//  }
 
   // List groups the current user belongs to.
-  rpc ListUserGroups (api.ListUserGroupsRequest) returns (api.UserGroupList) {
-    option (google.api.http).get = "/v2/user/{user_id}/group";
-  }
-
-  // Promote a set of users in a group to the next role up.
-  rpc PromoteGroupUsers (api.PromoteGroupUsersRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/v2/group/{group_id}/promote";
-  }
+//  rpc ListUserGroups (api.ListUserGroupsRequest) returns (api.UserGroupList) {
+//    option (google.api.http).get = "/v2/user/{user_id}/group";
+//  }
+//
+//  // Promote a set of users in a group to the next role up.
+//  rpc PromoteGroupUsers (api.PromoteGroupUsersRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http).post = "/v2/group/{group_id}/promote";
+//  }
 
   // Get storage objects.
-  rpc ReadStorageObjects (api.ReadStorageObjectsRequest) returns (api.StorageObjects) {
-    option (google.api.http) = {
-      post: "/v2/storage",
-      body: "*"
-    };
-  }
+//  rpc ReadStorageObjects (api.ReadStorageObjectsRequest) returns (api.StorageObjects) {
+//    option (google.api.http) = {
+//      post: "/v2/storage",
+//      body: "*"
+//    };
+//  }
 
   // Execute a Lua function on the server.
   rpc RpcFunc (api.Rpc) returns (api.Rpc) {
@@ -401,42 +400,42 @@ service Nakama {
   }
 
   // Update fields in the current user's account.
-  rpc UpdateAccount (api.UpdateAccountRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      put: "/v2/account",
-      body: "*"
-    };
-  }
+//  rpc UpdateAccount (api.UpdateAccountRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http) = {
+//      put: "/v2/account",
+//      body: "*"
+//    };
+//  }
 
   // Update fields in a given group.
-  rpc UpdateGroup (api.UpdateGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      put: "/v2/group/{group_id}",
-      body: "*"
-    };
-  }
+//  rpc UpdateGroup (api.UpdateGroupRequest) returns (google.protobuf.Empty) {
+//    option (google.api.http) = {
+//      put: "/v2/group/{group_id}",
+//      body: "*"
+//    };
+//  }
 
   // Write a record to a leaderboard.
-  rpc WriteLeaderboardRecord (api.WriteLeaderboardRecordRequest) returns (api.LeaderboardRecord) {
-    option (google.api.http) = {
-      post: "/v2/leaderboard/{leaderboard_id}",
-      body: "record"
-    };
-  }
+//  rpc WriteLeaderboardRecord (api.WriteLeaderboardRecordRequest) returns (api.LeaderboardRecord) {
+//    option (google.api.http) = {
+//      post: "/v2/leaderboard/{leaderboard_id}",
+//      body: "record"
+//    };
+//  }
 
   // Write objects into the storage engine.
-  rpc WriteStorageObjects (api.WriteStorageObjectsRequest) returns (api.StorageObjectAcks) {
-    option (google.api.http) = {
-      put: "/v2/storage",
-      body: "*"
-    };
-  }
+//  rpc WriteStorageObjects (api.WriteStorageObjectsRequest) returns (api.StorageObjectAcks) {
+//    option (google.api.http) = {
+//      put: "/v2/storage",
+//      body: "*"
+//    };
+//  }
 
   // Write a record to a tournament.
-  rpc WriteTournamentRecord (api.WriteTournamentRecordRequest) returns (api.LeaderboardRecord) {
-    option (google.api.http) = {
-      put: "/v2/tournament/{tournament_id}",
-      body: "record"
-    };
-  }
+//  rpc WriteTournamentRecord (api.WriteTournamentRecordRequest) returns (api.LeaderboardRecord) {
+//    option (google.api.http) = {
+//      put: "/v2/tournament/{tournament_id}",
+//      body: "record"
+//    };
+//  }
 }

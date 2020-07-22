@@ -301,10 +301,10 @@ type Initializer interface {
 	RegisterMatch(name string, fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule) (Match, error)) error
 
 	// RegisterTournamentEnd
-	RegisterTournamentEnd(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, tournament *api.Tournament, end, reset int64) error) error
+	//RegisterTournamentEnd(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, tournament *api.Tournament, end, reset int64) error) error
 
 	// RegisterTournamentReset
-	RegisterTournamentReset(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, tournament *api.Tournament, end, reset int64) error) error
+	//RegisterTournamentReset(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, tournament *api.Tournament, end, reset int64) error) error
 
 	// RegisterLeaderboardReset
 	RegisterLeaderboardReset(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, leaderboard Leaderboard, reset int64) error) error
@@ -313,13 +313,13 @@ type Initializer interface {
 	RegisterBeforeGetAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule) error) error
 
 	// RegisterAfterGetAccount is used to register a function invoked after the server processes the relevant request.
-	RegisterAfterGetAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Account) error) error
+	//RegisterAfterGetAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Account) error) error
 
 	// RegisterBeforeUpdateAccount is used to register a function invoked when the server receives the relevant request.
-	RegisterBeforeUpdateAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateAccountRequest) (*api.UpdateAccountRequest, error)) error
+	//RegisterBeforeUpdateAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateAccountRequest) (*api.UpdateAccountRequest, error)) error
 
 	// RegisterAfterUpdateAccount is used to register a function invoked after the server processes the relevant request.
-	RegisterAfterUpdateAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateAccountRequest) error) error
+	//RegisterAfterUpdateAccount(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateAccountRequest) error) error
 
 	//// RegisterBeforeAuthenticateApple can be used to perform pre-authentication checks.
 	//RegisterBeforeAuthenticateApple(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AuthenticateAppleRequest) (*api.AuthenticateAppleRequest, error)) error
@@ -384,130 +384,130 @@ type Initializer interface {
 	RegisterAfterListChannelMessages(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.ChannelMessageList, in *api.ListChannelMessagesRequest) error) error
 
 	// RegisterBeforeListChannelMessages can be used to perform additional logic before listing friends.
-	RegisterBeforeListFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListFriendsRequest) (*api.ListFriendsRequest, error)) error
+	//RegisterBeforeListFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListFriendsRequest) (*api.ListFriendsRequest, error)) error
 
 	// RegisterAfterListFriends can be used to perform additional logic after friends are listed.
-	RegisterAfterListFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.FriendList) error) error
+	//RegisterAfterListFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.FriendList) error) error
 
 	// RegisterBeforeAddFriends can be used to perform additional logic before friends are added.
-	RegisterBeforeAddFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddFriendsRequest) (*api.AddFriendsRequest, error)) error
+	//RegisterBeforeAddFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddFriendsRequest) (*api.AddFriendsRequest, error)) error
 
 	// RegisterAfterAddFriends can be used to perform additional logic after friends are added.
-	RegisterAfterAddFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddFriendsRequest) error) error
+	//RegisterAfterAddFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddFriendsRequest) error) error
 
 	// RegisterBeforeDeleteFriends can be used to perform additional logic before friends are deleted.
-	RegisterBeforeDeleteFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteFriendsRequest) (*api.DeleteFriendsRequest, error)) error
+	//RegisterBeforeDeleteFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteFriendsRequest) (*api.DeleteFriendsRequest, error)) error
 
 	// RegisterAfterDeleteFriends can be used to perform additional logic after friends are deleted.
-	RegisterAfterDeleteFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteFriendsRequest) error) error
+	//RegisterAfterDeleteFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteFriendsRequest) error) error
 
 	// RegisterBeforeBlockFriends can be used to perform additional logic before friends are blocked.
-	RegisterBeforeBlockFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BlockFriendsRequest) (*api.BlockFriendsRequest, error)) error
+	//RegisterBeforeBlockFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BlockFriendsRequest) (*api.BlockFriendsRequest, error)) error
 
 	// RegisterAfterBlockFriends can be used to perform additional logic after friends are blocked.
-	RegisterAfterBlockFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BlockFriendsRequest) error) error
+	//RegisterAfterBlockFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BlockFriendsRequest) error) error
 
 	// RegisterBeforeImportFacebookFriends can be used to perform additional logic before Facebook friends are imported.
-	RegisterBeforeImportFacebookFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ImportFacebookFriendsRequest) (*api.ImportFacebookFriendsRequest, error)) error
+	//RegisterBeforeImportFacebookFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ImportFacebookFriendsRequest) (*api.ImportFacebookFriendsRequest, error)) error
 
 	// RegisterAfterImportFacebookFriends can be used to perform additional logic after Facebook friends are imported.
-	RegisterAfterImportFacebookFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ImportFacebookFriendsRequest) error) error
+	//RegisterAfterImportFacebookFriends(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ImportFacebookFriendsRequest) error) error
 
 	// RegisterBeforeCreateGroup can be used to perform additional logic before a group is created.
-	RegisterBeforeCreateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.CreateGroupRequest) (*api.CreateGroupRequest, error)) error
+	//RegisterBeforeCreateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.CreateGroupRequest) (*api.CreateGroupRequest, error)) error
 
 	// RegisterAfterCreateGroup can be used to perform additional logic after a group is created.
-	RegisterAfterCreateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Group, in *api.CreateGroupRequest) error) error
+	//RegisterAfterCreateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Group, in *api.CreateGroupRequest) error) error
 
 	// RegisterBeforeUpdateGroup can be used to perform additional logic before a group is updated.
-	RegisterBeforeUpdateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateGroupRequest) (*api.UpdateGroupRequest, error)) error
+	//RegisterBeforeUpdateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateGroupRequest) (*api.UpdateGroupRequest, error)) error
 
 	// RegisterAfterUpdateGroup can be used to perform additional logic after a group is updated.
-	RegisterAfterUpdateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateGroupRequest) error) error
+	//RegisterAfterUpdateGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.UpdateGroupRequest) error) error
 
 	// RegisterBeforeDeleteGroup can be used to perform additional logic before a group is deleted.
-	RegisterBeforeDeleteGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteGroupRequest) (*api.DeleteGroupRequest, error)) error
+	//RegisterBeforeDeleteGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteGroupRequest) (*api.DeleteGroupRequest, error)) error
 
 	// RegisterAfterDeleteGroup can be used to perform additional logic after a group is deleted.
-	RegisterAfterDeleteGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteGroupRequest) error) error
+	//RegisterAfterDeleteGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteGroupRequest) error) error
 
 	// RegisterBeforeJoinGroup can be used to perform additional logic before user joins a group.
-	RegisterBeforeJoinGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinGroupRequest) (*api.JoinGroupRequest, error)) error
+	//RegisterBeforeJoinGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinGroupRequest) (*api.JoinGroupRequest, error)) error
 
 	// RegisterAfterJoinGroup can be used to perform additional logic after user joins a group.
-	RegisterAfterJoinGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinGroupRequest) error) error
+	//RegisterAfterJoinGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinGroupRequest) error) error
 
 	// RegisterBeforeLeaveGroup can be used to perform additional logic before user leaves a group.
-	RegisterBeforeLeaveGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.LeaveGroupRequest) (*api.LeaveGroupRequest, error)) error
+	//RegisterBeforeLeaveGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.LeaveGroupRequest) (*api.LeaveGroupRequest, error)) error
 
 	// RegisterAfterLeaveGroup can be used to perform additional logic after user leaves a group.
-	RegisterAfterLeaveGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.LeaveGroupRequest) error) error
+	//RegisterAfterLeaveGroup(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.LeaveGroupRequest) error) error
 
 	// RegisterBeforeAddGroupUsers can be used to perform additional logic before user is added to a group.
-	RegisterBeforeAddGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddGroupUsersRequest) (*api.AddGroupUsersRequest, error)) error
+	//RegisterBeforeAddGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddGroupUsersRequest) (*api.AddGroupUsersRequest, error)) error
 
 	// RegisterAfterAddGroupUsers can be used to perform additional logic after user is added to a group.
-	RegisterAfterAddGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddGroupUsersRequest) error) error
+	//RegisterAfterAddGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AddGroupUsersRequest) error) error
 
 	// RegisterBeforeBanGroupUsers can be used to perform additional logic before user is banned from a group.
-	RegisterBeforeBanGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BanGroupUsersRequest) (*api.BanGroupUsersRequest, error)) error
+	//RegisterBeforeBanGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BanGroupUsersRequest) (*api.BanGroupUsersRequest, error)) error
 
 	// RegisterAfterBanGroupUsers can be used to perform additional logic after user is banned from a group.
-	RegisterAfterBanGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BanGroupUsersRequest) error) error
+	//RegisterAfterBanGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.BanGroupUsersRequest) error) error
 
 	// RegisterBeforeKickGroupUsers can be used to perform additional logic before user is kicked to a group.
-	RegisterBeforeKickGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.KickGroupUsersRequest) (*api.KickGroupUsersRequest, error)) error
+	//RegisterBeforeKickGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.KickGroupUsersRequest) (*api.KickGroupUsersRequest, error)) error
 
 	// RegisterAfterKickGroupUsers can be used to perform additional logic after user is kicked from a group.
-	RegisterAfterKickGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.KickGroupUsersRequest) error) error
+	//RegisterAfterKickGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.KickGroupUsersRequest) error) error
 
 	// RegisterBeforePromoteGroupUsers can be used to perform additional logic before user is promoted.
-	RegisterBeforePromoteGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.PromoteGroupUsersRequest) (*api.PromoteGroupUsersRequest, error)) error
+	//RegisterBeforePromoteGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.PromoteGroupUsersRequest) (*api.PromoteGroupUsersRequest, error)) error
 
 	// RegisterAfterPromoteGroupUsers can be used to perform additional logic after user is promoted.
-	RegisterAfterPromoteGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.PromoteGroupUsersRequest) error) error
+	//RegisterAfterPromoteGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.PromoteGroupUsersRequest) error) error
 
 	// RegisterBeforeListGroupUsers can be used to perform additional logic before users in a group is listed.
-	RegisterBeforeListGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListGroupUsersRequest) (*api.ListGroupUsersRequest, error)) error
+	//RegisterBeforeListGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListGroupUsersRequest) (*api.ListGroupUsersRequest, error)) error
 
 	// RegisterAfterListGroupUsers can be used to perform additional logic after users in a group is listed.
-	RegisterAfterListGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.GroupUserList, in *api.ListGroupUsersRequest) error) error
+	//RegisterAfterListGroupUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.GroupUserList, in *api.ListGroupUsersRequest) error) error
 
 	// RegisterBeforeListUserGroups can be used to perform additional logic before groups for a user is listed.
-	RegisterBeforeListUserGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListUserGroupsRequest) (*api.ListUserGroupsRequest, error)) error
+	//RegisterBeforeListUserGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListUserGroupsRequest) (*api.ListUserGroupsRequest, error)) error
 
 	// RegisterAfterListUserGroups can be used to perform additional logic after groups for a user is listed.
-	RegisterAfterListUserGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.UserGroupList, in *api.ListUserGroupsRequest) error) error
+	//RegisterAfterListUserGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.UserGroupList, in *api.ListUserGroupsRequest) error) error
 
 	// RegisterBeforeListGroups can be used to perform additional logic before groups are listed.
-	RegisterBeforeListGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListGroupsRequest) (*api.ListGroupsRequest, error)) error
+	//RegisterBeforeListGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListGroupsRequest) (*api.ListGroupsRequest, error)) error
 
 	// RegisterAfterListGroups can be used to perform additional logic after groups are listed.
-	RegisterAfterListGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.GroupList, in *api.ListGroupsRequest) error) error
+	//RegisterAfterListGroups(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.GroupList, in *api.ListGroupsRequest) error) error
 
 	// RegisterBeforeDeleteLeaderboardRecord can be used to perform additional logic before deleting record from a leaderboard.
-	RegisterBeforeDeleteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteLeaderboardRecordRequest) (*api.DeleteLeaderboardRecordRequest, error)) error
+	//RegisterBeforeDeleteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteLeaderboardRecordRequest) (*api.DeleteLeaderboardRecordRequest, error)) error
 
 	// RegisterAfterDeleteLeaderboardRecord can be used to perform additional logic after deleting record from a leaderboard.
-	RegisterAfterDeleteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteLeaderboardRecordRequest) error) error
+	//RegisterAfterDeleteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteLeaderboardRecordRequest) error) error
 
 	// RegisterBeforeListLeaderboardRecords can be used to perform additional logic before listing records from a leaderboard.
-	RegisterBeforeListLeaderboardRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListLeaderboardRecordsRequest) (*api.ListLeaderboardRecordsRequest, error)) error
+	//RegisterBeforeListLeaderboardRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListLeaderboardRecordsRequest) (*api.ListLeaderboardRecordsRequest, error)) error
 
 	// RegisterAfterListLeaderboardRecords  can be used to perform additional logic after listing records from a leaderboard.
-	RegisterAfterListLeaderboardRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecordList, in *api.ListLeaderboardRecordsRequest) error) error
+	//RegisterAfterListLeaderboardRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecordList, in *api.ListLeaderboardRecordsRequest) error) error
 
 	// RegisterBeforeWriteLeaderboardRecord can be used to perform additional logic before submitting new record to a leaderboard.
-	RegisterBeforeWriteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteLeaderboardRecordRequest) (*api.WriteLeaderboardRecordRequest, error)) error
+	//RegisterBeforeWriteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteLeaderboardRecordRequest) (*api.WriteLeaderboardRecordRequest, error)) error
 
 	// RegisterAfterWriteLeaderboardRecord can be used to perform additional logic after submitting new record to a leaderboard.
-	RegisterAfterWriteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecord, in *api.WriteLeaderboardRecordRequest) error) error
+	//RegisterAfterWriteLeaderboardRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecord, in *api.WriteLeaderboardRecordRequest) error) error
 
 	// RegisterBeforeListLeaderboardRecordsAroundOwner can be used to perform additional logic before listing records from a leaderboard.
-	RegisterBeforeListLeaderboardRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListLeaderboardRecordsAroundOwnerRequest) (*api.ListLeaderboardRecordsAroundOwnerRequest, error)) error
+	//RegisterBeforeListLeaderboardRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListLeaderboardRecordsAroundOwnerRequest) (*api.ListLeaderboardRecordsAroundOwnerRequest, error)) error
 
 	// RegisterAfterListLeaderboardRecordsAroundOwner can be used to perform additional logic after listing records from a leaderboard.
-	RegisterAfterListLeaderboardRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecordList, in *api.ListLeaderboardRecordsAroundOwnerRequest) error) error
+	//RegisterAfterListLeaderboardRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecordList, in *api.ListLeaderboardRecordsAroundOwnerRequest) error) error
 
 	//// RegisterBeforeLinkApple can be used to perform additional logic before linking Apple ID to an account.
 	//RegisterBeforeLinkApple(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AccountApple) (*api.AccountApple, error)) error
@@ -582,58 +582,58 @@ type Initializer interface {
 	RegisterAfterDeleteNotification(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteNotificationsRequest) error) error
 
 	// RegisterBeforeListStorageObjects can be used to perform additional logic before listing storage objects.
-	RegisterBeforeListStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListStorageObjectsRequest) (*api.ListStorageObjectsRequest, error)) error
+	//RegisterBeforeListStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListStorageObjectsRequest) (*api.ListStorageObjectsRequest, error)) error
 
 	// RegisterAfterListStorageObjects can be used to perform additional logic after listing storage objects.
-	RegisterAfterListStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjectList, in *api.ListStorageObjectsRequest) error) error
+	//RegisterAfterListStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjectList, in *api.ListStorageObjectsRequest) error) error
 
 	// RegisterBeforeReadStorageObjects can be used to perform additional logic before reading storage objects.
-	RegisterBeforeReadStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ReadStorageObjectsRequest) (*api.ReadStorageObjectsRequest, error)) error
+	//RegisterBeforeReadStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ReadStorageObjectsRequest) (*api.ReadStorageObjectsRequest, error)) error
 
 	// RegisterAfterReadStorageObjects can be used to perform additional logic after reading storage objects.
-	RegisterAfterReadStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjects, in *api.ReadStorageObjectsRequest) error) error
+	//RegisterAfterReadStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjects, in *api.ReadStorageObjectsRequest) error) error
 
 	// RegisterBeforeWriteStorageObjects can be used to perform additional logic before writing storage objects.
-	RegisterBeforeWriteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteStorageObjectsRequest) (*api.WriteStorageObjectsRequest, error)) error
+	//RegisterBeforeWriteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteStorageObjectsRequest) (*api.WriteStorageObjectsRequest, error)) error
 
 	// RegisterAfterWriteStorageObjects can be used to perform additional logic after writing storage objects.
-	RegisterAfterWriteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjectAcks, in *api.WriteStorageObjectsRequest) error) error
+	//RegisterAfterWriteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.StorageObjectAcks, in *api.WriteStorageObjectsRequest) error) error
 
 	// RegisterBeforeDeleteStorageObjects can be used to perform additional logic before deleting storage objects.
-	RegisterBeforeDeleteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteStorageObjectsRequest) (*api.DeleteStorageObjectsRequest, error)) error
+	//RegisterBeforeDeleteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteStorageObjectsRequest) (*api.DeleteStorageObjectsRequest, error)) error
 
 	// RegisterAfterDeleteStorageObjects can be used to perform additional logic after deleting storage objects.
-	RegisterAfterDeleteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteStorageObjectsRequest) error) error
+	//RegisterAfterDeleteStorageObjects(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.DeleteStorageObjectsRequest) error) error
 
 	// RegisterBeforeJoinTournament can be used to perform additional logic before user joins a tournament.
-	RegisterBeforeJoinTournament(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinTournamentRequest) (*api.JoinTournamentRequest, error)) error
+	//RegisterBeforeJoinTournament(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinTournamentRequest) (*api.JoinTournamentRequest, error)) error
 
 	// RegisterAfterJoinTournament can be used to perform additional logic after user joins a tournament.
-	RegisterAfterJoinTournament(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinTournamentRequest) error) error
+	//RegisterAfterJoinTournament(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.JoinTournamentRequest) error) error
 
 	// RegisterBeforeListTournamentRecords can be used to perform additional logic before listing tournament records.
-	RegisterBeforeListTournamentRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentRecordsRequest) (*api.ListTournamentRecordsRequest, error)) error
+	//RegisterBeforeListTournamentRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentRecordsRequest) (*api.ListTournamentRecordsRequest, error)) error
 
 	// RegisterAfterListTournamentRecords can be used to perform additional logic after listing tournament records.
-	RegisterAfterListTournamentRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentRecordList, in *api.ListTournamentRecordsRequest) error) error
+	//RegisterAfterListTournamentRecords(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentRecordList, in *api.ListTournamentRecordsRequest) error) error
 
 	// RegisterBeforeListTournaments can be used to perform additional logic before listing tournaments.
-	RegisterBeforeListTournaments(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentsRequest) (*api.ListTournamentsRequest, error)) error
+	//RegisterBeforeListTournaments(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentsRequest) (*api.ListTournamentsRequest, error)) error
 
 	// RegisterAfterListTournaments can be used to perform additional logic after listing tournaments.
-	RegisterAfterListTournaments(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentList, in *api.ListTournamentsRequest) error) error
+	//RegisterAfterListTournaments(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentList, in *api.ListTournamentsRequest) error) error
 
 	// RegisterBeforeWriteTournamentRecord can be used to perform additional logic before writing tournament records.
-	RegisterBeforeWriteTournamentRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteTournamentRecordRequest) (*api.WriteTournamentRecordRequest, error)) error
+	//RegisterBeforeWriteTournamentRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.WriteTournamentRecordRequest) (*api.WriteTournamentRecordRequest, error)) error
 
 	// RegisterAfterWriteTournamentRecord can be used to perform additional logic after writing tournament records.
-	RegisterAfterWriteTournamentRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecord, in *api.WriteTournamentRecordRequest) error) error
+	//RegisterAfterWriteTournamentRecord(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.LeaderboardRecord, in *api.WriteTournamentRecordRequest) error) error
 
 	// RegisterBeforeListTournamentRecordsAroundOwner can be used to perform additional logic before listing tournament records.
-	RegisterBeforeListTournamentRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentRecordsAroundOwnerRequest) (*api.ListTournamentRecordsAroundOwnerRequest, error)) error
+	//RegisterBeforeListTournamentRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.ListTournamentRecordsAroundOwnerRequest) (*api.ListTournamentRecordsAroundOwnerRequest, error)) error
 
 	// RegisterAfterListTournamentRecordsAroundOwner can be used to perform additional logic after listing tournament records.
-	RegisterAfterListTournamentRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentRecordList, in *api.ListTournamentRecordsAroundOwnerRequest) error) error
+	//RegisterAfterListTournamentRecordsAroundOwner(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.TournamentRecordList, in *api.ListTournamentRecordsAroundOwnerRequest) error) error
 
 	//// RegisterBeforeUnlinkApple can be used to perform additional logic before Apple ID is unlinked from an account.
 	//RegisterBeforeUnlinkApple(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AccountApple) (*api.AccountApple, error)) error
@@ -660,10 +660,10 @@ type Initializer interface {
 	RegisterAfterUnlinkEmail(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.AccountEmail) error) error
 
 	// RegisterBeforeGetUsers can be used to perform additional logic before retrieving users.
-	RegisterBeforeGetUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.GetUsersRequest) (*api.GetUsersRequest, error)) error
+	//RegisterBeforeGetUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, in *api.GetUsersRequest) (*api.GetUsersRequest, error)) error
 
 	// RegisterAfterGetUsers can be used to perform additional logic after retrieving users.
-	RegisterAfterGetUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Users, in *api.GetUsersRequest) error) error
+	//RegisterAfterGetUsers(fn func(ctx context.Context, logger Logger, db *sql.DB, nk NakamaModule, out *api.Users, in *api.GetUsersRequest) error) error
 
 	// RegisterEvent can be used to define a function handler that triggers when custom events are received or generated.
 	RegisterEvent(fn func(ctx context.Context, logger Logger, evt *api.Event)) error
@@ -753,28 +753,28 @@ type WalletLedgerItem interface {
 	GetMetadata() map[string]interface{}
 }
 
-type StorageRead struct {
-	Collection string
-	Key        string
-	UserID     string
-}
+//type StorageRead struct {
+//	Collection string
+//	Key        string
+//	UserID     string
+//}
 
-type StorageWrite struct {
-	Collection      string
-	Key             string
-	UserID          string
-	Value           string
-	Version         string
-	PermissionRead  int
-	PermissionWrite int
-}
+//type StorageWrite struct {
+//	Collection      string
+//	Key             string
+//	UserID          string
+//	Value           string
+//	Version         string
+//	PermissionRead  int
+//	PermissionWrite int
+//}
 
-type StorageDelete struct {
-	Collection string
-	Key        string
-	UserID     string
-	Version    string
-}
+//type StorageDelete struct {
+//	Collection string
+//	Key        string
+//	UserID     string
+//	Version    string
+//}
 
 type NakamaModule interface {
 	//AuthenticateApple(ctx context.Context, token, username string, create bool) (string, string, bool, error)
@@ -789,17 +789,17 @@ type NakamaModule interface {
 
 	AuthenticateTokenGenerate(userID, username string, vars map[string]string, exp int64) (string, int64, error)
 
-	AccountGetId(ctx context.Context, userID string) (*api.Account, error)
-	AccountsGetId(ctx context.Context, userIDs []string) ([]*api.Account, error)
-	AccountUpdateId(ctx context.Context, userID, username string, metadata map[string]interface{}, displayName, timezone, location, langTag, avatarUrl string) error
+	//AccountGetId(ctx context.Context, userID string) (*api.Account, error)
+	//AccountsGetId(ctx context.Context, userIDs []string) ([]*api.Account, error)
+	//AccountUpdateId(ctx context.Context, userID, username string, metadata map[string]interface{}, displayName, timezone, location, langTag, avatarUrl string) error
 
-	AccountDeleteId(ctx context.Context, userID string, recorded bool) error
+	//AccountDeleteId(ctx context.Context, userID string, recorded bool) error
 	AccountExportId(ctx context.Context, userID string) (string, error)
 
-	UsersGetId(ctx context.Context, userIDs []string) ([]*api.User, error)
-	UsersGetUsername(ctx context.Context, usernames []string) ([]*api.User, error)
-	UsersBanId(ctx context.Context, userIDs []string) error
-	UsersUnbanId(ctx context.Context, userIDs []string) error
+	//UsersGetId(ctx context.Context, userIDs []string) ([]*api.User, error)
+	//UsersGetUsername(ctx context.Context, usernames []string) ([]*api.User, error)
+	//UsersBanId(ctx context.Context, userIDs []string) error
+	//UsersUnbanId(ctx context.Context, userIDs []string) error
 
 	LinkCustom(ctx context.Context, userID, customID string) error
 	LinkDevice(ctx context.Context, userID, deviceID string) error
@@ -833,33 +833,33 @@ type NakamaModule interface {
 	WalletLedgerUpdate(ctx context.Context, itemID string, metadata map[string]interface{}) (WalletLedgerItem, error)
 	WalletLedgerList(ctx context.Context, userID string, limit int, cursor string) ([]WalletLedgerItem, string, error)
 
-	StorageList(ctx context.Context, userID, collection string, limit int, cursor string) ([]*api.StorageObject, string, error)
-	StorageRead(ctx context.Context, reads []*StorageRead) ([]*api.StorageObject, error)
-	StorageWrite(ctx context.Context, writes []*StorageWrite) ([]*api.StorageObjectAck, error)
-	StorageDelete(ctx context.Context, deletes []*StorageDelete) error
+	//StorageList(ctx context.Context, userID, collection string, limit int, cursor string) ([]*api.StorageObject, string, error)
+	//StorageRead(ctx context.Context, reads []*StorageRead) ([]*api.StorageObject, error)
+	//StorageWrite(ctx context.Context, writes []*StorageWrite) ([]*api.StorageObjectAck, error)
+	//StorageDelete(ctx context.Context, deletes []*StorageDelete) error
 
-	LeaderboardCreate(ctx context.Context, id string, authoritative bool, sortOrder, operator, resetSchedule string, metadata map[string]interface{}) error
-	LeaderboardDelete(ctx context.Context, id string) error
-	LeaderboardRecordsList(ctx context.Context, id string, ownerIDs []string, limit int, cursor string, expiry int64) ([]*api.LeaderboardRecord, []*api.LeaderboardRecord, string, string, error)
-	LeaderboardRecordWrite(ctx context.Context, id, ownerID, username string, score, subscore int64, metadata map[string]interface{}) (*api.LeaderboardRecord, error)
-	LeaderboardRecordDelete(ctx context.Context, id, ownerID string) error
+	//LeaderboardCreate(ctx context.Context, id string, authoritative bool, sortOrder, operator, resetSchedule string, metadata map[string]interface{}) error
+	//LeaderboardDelete(ctx context.Context, id string) error
+	//LeaderboardRecordsList(ctx context.Context, id string, ownerIDs []string, limit int, cursor string, expiry int64) ([]*api.LeaderboardRecord, []*api.LeaderboardRecord, string, string, error)
+	//LeaderboardRecordWrite(ctx context.Context, id, ownerID, username string, score, subscore int64, metadata map[string]interface{}) (*api.LeaderboardRecord, error)
+	//LeaderboardRecordDelete(ctx context.Context, id, ownerID string) error
 
-	TournamentCreate(ctx context.Context, id string, sortOrder, operator, resetSchedule string, metadata map[string]interface{}, title, description string, category, startTime, endTime, duration, maxSize, maxNumScore int, joinRequired bool) error
-	TournamentDelete(ctx context.Context, id string) error
-	TournamentAddAttempt(ctx context.Context, id, ownerID string, count int) error
-	TournamentJoin(ctx context.Context, id, ownerID, username string) error
-	TournamentsGetId(ctx context.Context, tournamentIDs []string) ([]*api.Tournament, error)
-	TournamentList(ctx context.Context, categoryStart, categoryEnd, startTime, endTime, limit int, cursor string) (*api.TournamentList, error)
-	TournamentRecordWrite(ctx context.Context, id, ownerID, username string, score, subscore int64, metadata map[string]interface{}) (*api.LeaderboardRecord, error)
-	TournamentRecordsHaystack(ctx context.Context, id, ownerID string, limit int, expiry int64) ([]*api.LeaderboardRecord, error)
+	//TournamentCreate(ctx context.Context, id string, sortOrder, operator, resetSchedule string, metadata map[string]interface{}, title, description string, category, startTime, endTime, duration, maxSize, maxNumScore int, joinRequired bool) error
+	//TournamentDelete(ctx context.Context, id string) error
+	//TournamentAddAttempt(ctx context.Context, id, ownerID string, count int) error
+	//TournamentJoin(ctx context.Context, id, ownerID, username string) error
+	//TournamentsGetId(ctx context.Context, tournamentIDs []string) ([]*api.Tournament, error)
+	//TournamentList(ctx context.Context, categoryStart, categoryEnd, startTime, endTime, limit int, cursor string) (*api.TournamentList, error)
+	//TournamentRecordWrite(ctx context.Context, id, ownerID, username string, score, subscore int64, metadata map[string]interface{}) (*api.LeaderboardRecord, error)
+	//TournamentRecordsHaystack(ctx context.Context, id, ownerID string, limit int, expiry int64) ([]*api.LeaderboardRecord, error)
 
-	GroupsGetId(ctx context.Context, groupIDs []string) ([]*api.Group, error)
-	GroupCreate(ctx context.Context, userID, name, creatorID, langTag, description, avatarUrl string, open bool, metadata map[string]interface{}, maxCount int) (*api.Group, error)
-	GroupUpdate(ctx context.Context, id, name, creatorID, langTag, description, avatarUrl string, open bool, metadata map[string]interface{}, maxCount int) error
-	GroupDelete(ctx context.Context, id string) error
-	GroupUsersKick(ctx context.Context, groupID string, userIDs []string) error
-	GroupUsersList(ctx context.Context, id string, limit int, state *int, cursor string) ([]*api.GroupUserList_GroupUser, error)
-	UserGroupsList(ctx context.Context, userID string, limit int, state *int, cursor string) ([]*api.UserGroupList_UserGroup, error)
+	//GroupsGetId(ctx context.Context, groupIDs []string) ([]*api.Group, error)
+	//GroupCreate(ctx context.Context, userID, name, creatorID, langTag, description, avatarUrl string, open bool, metadata map[string]interface{}, maxCount int) (*api.Group, error)
+	//GroupUpdate(ctx context.Context, id, name, creatorID, langTag, description, avatarUrl string, open bool, metadata map[string]interface{}, maxCount int) error
+	//GroupDelete(ctx context.Context, id string) error
+	//GroupUsersKick(ctx context.Context, groupID string, userIDs []string) error
+	//GroupUsersList(ctx context.Context, id string, limit int, state *int, cursor string) ([]*api.GroupUserList_GroupUser, error)
+	//UserGroupsList(ctx context.Context, userID string, limit int, state *int, cursor string) ([]*api.UserGroupList_UserGroup, error)
 
 	Event(ctx context.Context, evt *api.Event) error
 }
