@@ -13,6 +13,7 @@ type ApiServerSkillz struct {
 }
 
 func (s *ApiServerSkillz) AuthenticateCustom(ctx context.Context, in *api.AuthenticateCustomRequest) (*api.Session, error) {
+	s.logger.Debug("User ID", zap.String("user_id", in.Account.Id))
 	// Before hook.
 	if fn := s.runtime.BeforeAuthenticateCustom(); fn != nil {
 		beforeFn := func(clientIP, clientPort string) error {
