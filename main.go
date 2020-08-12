@@ -29,7 +29,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aaron-skillz/sync-server-go/migrate"
 	"github.com/aaron-skillz/sync-server-go/server"
 	"github.com/gofrs/uuid"
 	"github.com/golang/protobuf/jsonpb"
@@ -74,8 +73,6 @@ func main() {
 		case "--version":
 			fmt.Println(semver)
 			return
-		case "migrate":
-			migrate.Parse(os.Args[2:], tmpLogger)
 		case "check":
 			// Parse any command line args to look up runtime path.
 			// Use full config structure even if not all of its options are available in this command.
