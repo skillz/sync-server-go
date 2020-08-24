@@ -3,9 +3,12 @@ package server
 import (
 	"context"
 	"github.com/aaron-skillz/sync-server-go/api"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
 type ApiServerSkillz struct {
@@ -13,7 +16,7 @@ type ApiServerSkillz struct {
 }
 
 func (s *ApiServerSkillz) AuthenticateCustom(ctx context.Context, in *api.AuthenticateCustomRequest) (*api.Session, error) {
-	s.logger.Debug("User ID", zap.String("user_id", in.Account.Id))
+	s.logger.Debug("Skillz User Authenticating", zap.String("user_id", in.Account.Id))
 	// Before hook.
 	if fn := s.runtime.BeforeAuthenticateCustom(); fn != nil {
 		beforeFn := func(clientIP, clientPort string) error {
@@ -64,7 +67,7 @@ func (s *ApiServerSkillz) AuthenticateCustom(ctx context.Context, in *api.Authen
 		return nil, status.Error(codes.InvalidArgument, "Username invalid, must be 1-128 bytes.")
 	}
 
-	token, exp := generateToken(s.config, in.Account.Id, username, in.Account.Vars)
+	token, exp := generateTokenSkillz(s.config, in.Account.Id, username, in.Account.Vars)
 	session := &api.Session{Created: false, Token: token}
 
 	// After hook.
@@ -86,6 +89,25 @@ func validateSkillzToken(token string) bool  {
 		return false
 	}
 	return true
+}
+
+func generateTokenSkillz(config Config, userID, username string, vars map[string]string) (string, int64) {
+	exp := time.Now().UTC().Add(time.Duration(config.GetSession().TokenExpirySec) * time.Second).Unix()
+	return generateTokenWithExpirySkillz(config, userID, username, vars, exp)
+}
+
+func generateTokenWithExpirySkillz(config Config, userID, username string, vars map[string]string, exp int64) (string, int64) {
+	// TODO: fix later if needed!!!!
+	nakamaUUID := uuid.NewV5(uuid.NamespaceURL, userID)
+	vars["skillz_uid"] = userID
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &SessionTokenClaims{
+		UserId:    nakamaUUID.String(),
+		Username:  username,
+		Vars:      vars,
+		ExpiresAt: exp,
+	})
+	signedToken, _ := token.SignedString([]byte(config.GetSession().EncryptionKey))
+	return signedToken, exp
 }
 
 //func (aSkillz *ApiServerSkillz) AddFriends(ctx context.Context, request *api.AddFriendsRequest) (*empty.Empty, error) {

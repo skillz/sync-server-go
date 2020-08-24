@@ -449,7 +449,8 @@ func parseToken(hmacSecretByte []byte, tokenString string) (userID uuid.UUID, us
 	userID, err = uuid.FromString(claims.UserId)
 	if err != nil {
 		// TODO: fix for format issue if user ID not in UUID format
-		userID = uuid.NewV5(uuid.NamespaceURL, claims.UserId)
+		// Update: move create UUID to Auth Custom
+		//userID = uuid.NewV5(uuid.NamespaceURL, claims.UserId)
 		return
 	}
 	return userID, claims.Username, claims.Vars, claims.ExpiresAt, true
