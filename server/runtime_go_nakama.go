@@ -930,94 +930,95 @@ func (n *RuntimeGoNakamaModule) NotificationsSend(ctx context.Context, notificat
 	return NotificationSend(ctx, n.logger, n.db, n.router, ns)
 }
 
-func (n *RuntimeGoNakamaModule) WalletUpdate(ctx context.Context, userID string, changeset, metadata map[string]interface{}, updateLedger bool) error {
-	uid, err := uuid.FromString(userID)
-	if err != nil {
-		return errors.New("expects a valid user id")
-	}
-
-	metadataBytes := []byte("{}")
-	if metadata != nil {
-		metadataBytes, err = json.Marshal(metadata)
-		if err != nil {
-			return errors.Errorf("failed to convert metadata: %s", err.Error())
-		}
-	}
-
-	return UpdateWallets(ctx, n.logger, n.db, []*walletUpdate{{
-		UserID:    uid,
-		Changeset: changeset,
-		Metadata:  string(metadataBytes),
-	}}, updateLedger)
-}
-
-func (n *RuntimeGoNakamaModule) WalletsUpdate(ctx context.Context, updates []*runtime.WalletUpdate, updateLedger bool) error {
-	size := len(updates)
-	if size == 0 {
-		return nil
-	}
-
-	walletUpdates := make([]*walletUpdate, size)
-
-	for i, update := range updates {
-		uid, err := uuid.FromString(update.UserID)
-		if err != nil {
-			return errors.New("expects a valid user id")
-		}
-
-		metadataBytes := []byte("{}")
-		if update.Metadata != nil {
-			metadataBytes, err = json.Marshal(update.Metadata)
-			if err != nil {
-				return errors.Errorf("failed to convert metadata: %s", err.Error())
-			}
-		}
-
-		walletUpdates[i] = &walletUpdate{
-			UserID:    uid,
-			Changeset: update.Changeset,
-			Metadata:  string(metadataBytes),
-		}
-	}
-
-	return UpdateWallets(ctx, n.logger, n.db, walletUpdates, updateLedger)
-}
-
-func (n *RuntimeGoNakamaModule) WalletLedgerUpdate(ctx context.Context, itemID string, metadata map[string]interface{}) (runtime.WalletLedgerItem, error) {
-	id, err := uuid.FromString(itemID)
-	if err != nil {
-		return nil, errors.New("expects a valid item id")
-	}
-
-	metadataBytes, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, errors.Errorf("failed to convert metadata: %s", err.Error())
-	}
-
-	return UpdateWalletLedger(ctx, n.logger, n.db, id, string(metadataBytes))
-}
-
-func (n *RuntimeGoNakamaModule) WalletLedgerList(ctx context.Context, userID string, limit int, cursor string) ([]runtime.WalletLedgerItem, string, error) {
-	uid, err := uuid.FromString(userID)
-	if err != nil {
-		return nil, "", errors.New("expects a valid user id")
-	}
-
-	if limit < 0 || limit > 100 {
-		return nil, "", errors.New("expects limit to be 0-100")
-	}
-
-	items, newCursor, err := ListWalletLedger(ctx, n.logger, n.db, uid, &limit, cursor)
-	if err != nil {
-		return nil, "", err
-	}
-
-	runtimeItems := make([]runtime.WalletLedgerItem, len(items))
-	for i, item := range items {
-		runtimeItems[i] = runtime.WalletLedgerItem(item)
-	}
-	return runtimeItems, newCursor, nil
-}
+// TODO: Clean up!!!!
+//func (n *RuntimeGoNakamaModule) WalletUpdate(ctx context.Context, userID string, changeset, metadata map[string]interface{}, updateLedger bool) error {
+//	uid, err := uuid.FromString(userID)
+//	if err != nil {
+//		return errors.New("expects a valid user id")
+//	}
+//
+//	metadataBytes := []byte("{}")
+//	if metadata != nil {
+//		metadataBytes, err = json.Marshal(metadata)
+//		if err != nil {
+//			return errors.Errorf("failed to convert metadata: %s", err.Error())
+//		}
+//	}
+//
+//	return UpdateWallets(ctx, n.logger, n.db, []*walletUpdate{{
+//		UserID:    uid,
+//		Changeset: changeset,
+//		Metadata:  string(metadataBytes),
+//	}}, updateLedger)
+//}
+//
+//func (n *RuntimeGoNakamaModule) WalletsUpdate(ctx context.Context, updates []*runtime.WalletUpdate, updateLedger bool) error {
+//	size := len(updates)
+//	if size == 0 {
+//		return nil
+//	}
+//
+//	walletUpdates := make([]*walletUpdate, size)
+//
+//	for i, update := range updates {
+//		uid, err := uuid.FromString(update.UserID)
+//		if err != nil {
+//			return errors.New("expects a valid user id")
+//		}
+//
+//		metadataBytes := []byte("{}")
+//		if update.Metadata != nil {
+//			metadataBytes, err = json.Marshal(update.Metadata)
+//			if err != nil {
+//				return errors.Errorf("failed to convert metadata: %s", err.Error())
+//			}
+//		}
+//
+//		walletUpdates[i] = &walletUpdate{
+//			UserID:    uid,
+//			Changeset: update.Changeset,
+//			Metadata:  string(metadataBytes),
+//		}
+//	}
+//
+//	return UpdateWallets(ctx, n.logger, n.db, walletUpdates, updateLedger)
+//}
+//
+//func (n *RuntimeGoNakamaModule) WalletLedgerUpdate(ctx context.Context, itemID string, metadata map[string]interface{}) (runtime.WalletLedgerItem, error) {
+//	id, err := uuid.FromString(itemID)
+//	if err != nil {
+//		return nil, errors.New("expects a valid item id")
+//	}
+//
+//	metadataBytes, err := json.Marshal(metadata)
+//	if err != nil {
+//		return nil, errors.Errorf("failed to convert metadata: %s", err.Error())
+//	}
+//
+//	return UpdateWalletLedger(ctx, n.logger, n.db, id, string(metadataBytes))
+//}
+//
+//func (n *RuntimeGoNakamaModule) WalletLedgerList(ctx context.Context, userID string, limit int, cursor string) ([]runtime.WalletLedgerItem, string, error) {
+//	uid, err := uuid.FromString(userID)
+//	if err != nil {
+//		return nil, "", errors.New("expects a valid user id")
+//	}
+//
+//	if limit < 0 || limit > 100 {
+//		return nil, "", errors.New("expects limit to be 0-100")
+//	}
+//
+//	items, newCursor, err := ListWalletLedger(ctx, n.logger, n.db, uid, &limit, cursor)
+//	if err != nil {
+//		return nil, "", err
+//	}
+//
+//	runtimeItems := make([]runtime.WalletLedgerItem, len(items))
+//	for i, item := range items {
+//		runtimeItems[i] = runtime.WalletLedgerItem(item)
+//	}
+//	return runtimeItems, newCursor, nil
+//}
 
 //func (n *RuntimeGoNakamaModule) StorageList(ctx context.Context, userID, collection string, limit int, cursor string) ([]*api.StorageObject, string, error) {
 //	var uid *uuid.UUID

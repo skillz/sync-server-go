@@ -189,10 +189,11 @@ func (n *RuntimeLuaNakamaModule) Loader(l *lua.LState) int {
 		"match_list":                         n.matchList,
 		"notification_send":                  n.notificationSend,
 		"notifications_send":                 n.notificationsSend,
-		"wallet_update":                      n.walletUpdate,
-		"wallets_update":                     n.walletsUpdate,
-		"wallet_ledger_update":               n.walletLedgerUpdate,
-		"wallet_ledger_list":                 n.walletLedgerList,
+		// TODO: Clean up!!!!
+		//"wallet_update":                      n.walletUpdate,
+		//"wallets_update":                     n.walletsUpdate,
+		//"wallet_ledger_update":               n.walletLedgerUpdate,
+		//"wallet_ledger_list":                 n.walletLedgerList,
 		"storage_list":                       n.storageList,
 		"storage_read":                       n.storageRead,
 		"storage_write":                      n.storageWrite,
@@ -3459,247 +3460,249 @@ func (n *RuntimeLuaNakamaModule) notificationsSend(l *lua.LState) int {
 	return 0
 }
 
-func (n *RuntimeLuaNakamaModule) walletUpdate(l *lua.LState) int {
-	// Parse user ID.
-	uid := l.CheckString(1)
-	if uid == "" {
-		l.ArgError(1, "expects a valid user id")
-		return 0
-	}
-	userID, err := uuid.FromString(uid)
-	if err != nil {
-		l.ArgError(1, "expects a valid user id")
-		return 0
-	}
 
-	// Parse changeset.
-	changesetTable := l.CheckTable(2)
-	if changesetTable == nil {
-		l.ArgError(2, "expects a table as changeset value")
-		return 0
-	}
-	changesetMap := RuntimeLuaConvertLuaTable(changesetTable)
-
-	// Parse metadata, optional.
-	metadataBytes := []byte("{}")
-	metadataTable := l.OptTable(3, nil)
-	if metadataTable != nil {
-		metadataMap := RuntimeLuaConvertLuaTable(metadataTable)
-		metadataBytes, err = json.Marshal(metadataMap)
-		if err != nil {
-			l.ArgError(3, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
-			return 0
-		}
-	}
-
-	updateLedger := l.OptBool(4, true)
-
-	if err = UpdateWallets(l.Context(), n.logger, n.db, []*walletUpdate{{
-		UserID:    userID,
-		Changeset: changesetMap,
-		Metadata:  string(metadataBytes),
-	}}, updateLedger); err != nil {
-		l.RaiseError(fmt.Sprintf("failed to update user wallet: %s", err.Error()))
-	}
-	return 0
-}
-
-func (n *RuntimeLuaNakamaModule) walletsUpdate(l *lua.LState) int {
-	updatesTable := l.CheckTable(1)
-	if updatesTable == nil {
-		l.ArgError(1, "expects a valid set of updates")
-		return 0
-	}
-	size := updatesTable.Len()
-	if size == 0 {
-		return 0
-	}
-
-	updates := make([]*walletUpdate, 0, size)
-	conversionError := false
-	updatesTable.ForEach(func(k, v lua.LValue) {
-		if conversionError {
-			return
-		}
-
-		updateTable, ok := v.(*lua.LTable)
-		if !ok {
-			conversionError = true
-			l.ArgError(1, "expects a valid set of updates")
-			return
-		}
-
-		update := &walletUpdate{}
-		updateTable.ForEach(func(k, v lua.LValue) {
-			if conversionError {
-				return
-			}
-
-			switch k.String() {
-			case "user_id":
-				if v.Type() != lua.LTString {
-					conversionError = true
-					l.ArgError(1, "expects user_id to be string")
-					return
-				}
-				uid, err := uuid.FromString(v.String())
-				if err != nil {
-					conversionError = true
-					l.ArgError(1, "expects user_id to be a valid ID")
-					return
-				}
-				update.UserID = uid
-			case "changeset":
-				if v.Type() != lua.LTTable {
-					conversionError = true
-					l.ArgError(1, "expects changeset to be table")
-					return
-				}
-				update.Changeset = RuntimeLuaConvertLuaTable(v.(*lua.LTable))
-			case "metadata":
-				if v.Type() != lua.LTTable {
-					conversionError = true
-					l.ArgError(1, "expects metadata to be table")
-					return
-				}
-				metadataMap := RuntimeLuaConvertLuaTable(v.(*lua.LTable))
-				metadataBytes, err := json.Marshal(metadataMap)
-				if err != nil {
-					conversionError = true
-					l.ArgError(1, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
-					return
-				}
-				update.Metadata = string(metadataBytes)
-			}
-		})
-
-		if conversionError {
-			return
-		}
-
-		if update.Metadata == "" {
-			// Default to empty metadata.
-			update.Metadata = "{}"
-		}
-
-		if update.Changeset == nil {
-			conversionError = true
-			l.ArgError(1, "expects changeset to be supplied")
-			return
-		}
-
-		updates = append(updates, update)
-	})
-	if conversionError {
-		return 0
-	}
-
-	updateLedger := l.OptBool(2, false)
-
-	if err := UpdateWallets(l.Context(), n.logger, n.db, updates, updateLedger); err != nil {
-		l.RaiseError(fmt.Sprintf("failed to update user wallet: %s", err.Error()))
-	}
-	return 0
-}
-
-func (n *RuntimeLuaNakamaModule) walletLedgerUpdate(l *lua.LState) int {
-	// Parse ledger ID.
-	id := l.CheckString(1)
-	if id == "" {
-		l.ArgError(1, "expects a valid id")
-		return 0
-	}
-	itemID, err := uuid.FromString(id)
-	if err != nil {
-		l.ArgError(1, "expects a valid id")
-		return 0
-	}
-
-	// Parse metadata.
-	metadataTable := l.CheckTable(2)
-	if metadataTable == nil {
-		l.ArgError(2, "expects a table as metadata value")
-		return 0
-	}
-	metadataMap := RuntimeLuaConvertLuaTable(metadataTable)
-	metadataBytes, err := json.Marshal(metadataMap)
-	if err != nil {
-		l.ArgError(2, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
-		return 0
-	}
-
-	item, err := UpdateWalletLedger(l.Context(), n.logger, n.db, itemID, string(metadataBytes))
-	if err != nil {
-		l.RaiseError(fmt.Sprintf("failed to update user wallet ledger: %s", err.Error()))
-		return 0
-	}
-
-	itemTable := l.CreateTable(0, 6)
-	itemTable.RawSetString("id", lua.LString(id))
-	itemTable.RawSetString("user_id", lua.LString(item.UserID))
-	itemTable.RawSetString("create_time", lua.LNumber(item.CreateTime))
-	itemTable.RawSetString("update_time", lua.LNumber(item.UpdateTime))
-
-	changesetTable := RuntimeLuaConvertMap(l, item.Changeset)
-	itemTable.RawSetString("changeset", changesetTable)
-
-	itemTable.RawSetString("metadata", metadataTable)
-
-	l.Push(itemTable)
-	return 1
-}
-
-func (n *RuntimeLuaNakamaModule) walletLedgerList(l *lua.LState) int {
-	// Parse user ID.
-	uid := l.CheckString(1)
-	if uid == "" {
-		l.ArgError(1, "expects a valid user id")
-		return 0
-	}
-	userID, err := uuid.FromString(uid)
-	if err != nil {
-		l.ArgError(1, "expects a valid user id")
-		return 0
-	}
-
-	// Parse limit.
-	limit := l.OptInt(2, 100)
-	if limit < 0 || limit > 100 {
-		l.ArgError(1, "expects limit to be 0-100")
-		return 0
-	}
-
-	// Parse cursor.
-	cursor := l.OptString(3, "")
-
-	items, newCursor, err := ListWalletLedger(l.Context(), n.logger, n.db, userID, &limit, cursor)
-	if err != nil {
-		l.RaiseError(fmt.Sprintf("failed to retrieve user wallet ledger: %s", err.Error()))
-		return 0
-	}
-
-	itemsTable := l.CreateTable(len(items), 0)
-	for i, item := range items {
-		itemTable := l.CreateTable(0, 6)
-		itemTable.RawSetString("id", lua.LString(item.ID))
-		itemTable.RawSetString("user_id", lua.LString(uid))
-		itemTable.RawSetString("create_time", lua.LNumber(item.CreateTime))
-		itemTable.RawSetString("update_time", lua.LNumber(item.UpdateTime))
-
-		changesetTable := RuntimeLuaConvertMap(l, item.Changeset)
-		itemTable.RawSetString("changeset", changesetTable)
-
-		metadataTable := RuntimeLuaConvertMap(l, item.Metadata)
-		itemTable.RawSetString("metadata", metadataTable)
-
-		itemsTable.RawSetInt(i+1, itemTable)
-	}
-
-	l.Push(itemsTable)
-	l.Push(lua.LString(newCursor))
-
-	return 2
-}
+// TODO: Clean up!!!!
+//func (n *RuntimeLuaNakamaModule) walletUpdate(l *lua.LState) int {
+//	// Parse user ID.
+//	uid := l.CheckString(1)
+//	if uid == "" {
+//		l.ArgError(1, "expects a valid user id")
+//		return 0
+//	}
+//	userID, err := uuid.FromString(uid)
+//	if err != nil {
+//		l.ArgError(1, "expects a valid user id")
+//		return 0
+//	}
+//
+//	// Parse changeset.
+//	changesetTable := l.CheckTable(2)
+//	if changesetTable == nil {
+//		l.ArgError(2, "expects a table as changeset value")
+//		return 0
+//	}
+//	changesetMap := RuntimeLuaConvertLuaTable(changesetTable)
+//
+//	// Parse metadata, optional.
+//	metadataBytes := []byte("{}")
+//	metadataTable := l.OptTable(3, nil)
+//	if metadataTable != nil {
+//		metadataMap := RuntimeLuaConvertLuaTable(metadataTable)
+//		metadataBytes, err = json.Marshal(metadataMap)
+//		if err != nil {
+//			l.ArgError(3, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
+//			return 0
+//		}
+//	}
+//
+//	updateLedger := l.OptBool(4, true)
+//
+//	if err = UpdateWallets(l.Context(), n.logger, n.db, []*walletUpdate{{
+//		UserID:    userID,
+//		Changeset: changesetMap,
+//		Metadata:  string(metadataBytes),
+//	}}, updateLedger); err != nil {
+//		l.RaiseError(fmt.Sprintf("failed to update user wallet: %s", err.Error()))
+//	}
+//	return 0
+//}
+//
+//func (n *RuntimeLuaNakamaModule) walletsUpdate(l *lua.LState) int {
+//	updatesTable := l.CheckTable(1)
+//	if updatesTable == nil {
+//		l.ArgError(1, "expects a valid set of updates")
+//		return 0
+//	}
+//	size := updatesTable.Len()
+//	if size == 0 {
+//		return 0
+//	}
+//
+//	updates := make([]*walletUpdate, 0, size)
+//	conversionError := false
+//	updatesTable.ForEach(func(k, v lua.LValue) {
+//		if conversionError {
+//			return
+//		}
+//
+//		updateTable, ok := v.(*lua.LTable)
+//		if !ok {
+//			conversionError = true
+//			l.ArgError(1, "expects a valid set of updates")
+//			return
+//		}
+//
+//		update := &walletUpdate{}
+//		updateTable.ForEach(func(k, v lua.LValue) {
+//			if conversionError {
+//				return
+//			}
+//
+//			switch k.String() {
+//			case "user_id":
+//				if v.Type() != lua.LTString {
+//					conversionError = true
+//					l.ArgError(1, "expects user_id to be string")
+//					return
+//				}
+//				uid, err := uuid.FromString(v.String())
+//				if err != nil {
+//					conversionError = true
+//					l.ArgError(1, "expects user_id to be a valid ID")
+//					return
+//				}
+//				update.UserID = uid
+//			case "changeset":
+//				if v.Type() != lua.LTTable {
+//					conversionError = true
+//					l.ArgError(1, "expects changeset to be table")
+//					return
+//				}
+//				update.Changeset = RuntimeLuaConvertLuaTable(v.(*lua.LTable))
+//			case "metadata":
+//				if v.Type() != lua.LTTable {
+//					conversionError = true
+//					l.ArgError(1, "expects metadata to be table")
+//					return
+//				}
+//				metadataMap := RuntimeLuaConvertLuaTable(v.(*lua.LTable))
+//				metadataBytes, err := json.Marshal(metadataMap)
+//				if err != nil {
+//					conversionError = true
+//					l.ArgError(1, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
+//					return
+//				}
+//				update.Metadata = string(metadataBytes)
+//			}
+//		})
+//
+//		if conversionError {
+//			return
+//		}
+//
+//		if update.Metadata == "" {
+//			// Default to empty metadata.
+//			update.Metadata = "{}"
+//		}
+//
+//		if update.Changeset == nil {
+//			conversionError = true
+//			l.ArgError(1, "expects changeset to be supplied")
+//			return
+//		}
+//
+//		updates = append(updates, update)
+//	})
+//	if conversionError {
+//		return 0
+//	}
+//
+//	updateLedger := l.OptBool(2, false)
+//
+//	if err := UpdateWallets(l.Context(), n.logger, n.db, updates, updateLedger); err != nil {
+//		l.RaiseError(fmt.Sprintf("failed to update user wallet: %s", err.Error()))
+//	}
+//	return 0
+//}
+//
+//func (n *RuntimeLuaNakamaModule) walletLedgerUpdate(l *lua.LState) int {
+//	// Parse ledger ID.
+//	id := l.CheckString(1)
+//	if id == "" {
+//		l.ArgError(1, "expects a valid id")
+//		return 0
+//	}
+//	itemID, err := uuid.FromString(id)
+//	if err != nil {
+//		l.ArgError(1, "expects a valid id")
+//		return 0
+//	}
+//
+//	// Parse metadata.
+//	metadataTable := l.CheckTable(2)
+//	if metadataTable == nil {
+//		l.ArgError(2, "expects a table as metadata value")
+//		return 0
+//	}
+//	metadataMap := RuntimeLuaConvertLuaTable(metadataTable)
+//	metadataBytes, err := json.Marshal(metadataMap)
+//	if err != nil {
+//		l.ArgError(2, fmt.Sprintf("failed to convert metadata: %s", err.Error()))
+//		return 0
+//	}
+//
+//	item, err := UpdateWalletLedger(l.Context(), n.logger, n.db, itemID, string(metadataBytes))
+//	if err != nil {
+//		l.RaiseError(fmt.Sprintf("failed to update user wallet ledger: %s", err.Error()))
+//		return 0
+//	}
+//
+//	itemTable := l.CreateTable(0, 6)
+//	itemTable.RawSetString("id", lua.LString(id))
+//	itemTable.RawSetString("user_id", lua.LString(item.UserID))
+//	itemTable.RawSetString("create_time", lua.LNumber(item.CreateTime))
+//	itemTable.RawSetString("update_time", lua.LNumber(item.UpdateTime))
+//
+//	changesetTable := RuntimeLuaConvertMap(l, item.Changeset)
+//	itemTable.RawSetString("changeset", changesetTable)
+//
+//	itemTable.RawSetString("metadata", metadataTable)
+//
+//	l.Push(itemTable)
+//	return 1
+//}
+//
+//func (n *RuntimeLuaNakamaModule) walletLedgerList(l *lua.LState) int {
+//	// Parse user ID.
+//	uid := l.CheckString(1)
+//	if uid == "" {
+//		l.ArgError(1, "expects a valid user id")
+//		return 0
+//	}
+//	userID, err := uuid.FromString(uid)
+//	if err != nil {
+//		l.ArgError(1, "expects a valid user id")
+//		return 0
+//	}
+//
+//	// Parse limit.
+//	limit := l.OptInt(2, 100)
+//	if limit < 0 || limit > 100 {
+//		l.ArgError(1, "expects limit to be 0-100")
+//		return 0
+//	}
+//
+//	// Parse cursor.
+//	cursor := l.OptString(3, "")
+//
+//	items, newCursor, err := ListWalletLedger(l.Context(), n.logger, n.db, userID, &limit, cursor)
+//	if err != nil {
+//		l.RaiseError(fmt.Sprintf("failed to retrieve user wallet ledger: %s", err.Error()))
+//		return 0
+//	}
+//
+//	itemsTable := l.CreateTable(len(items), 0)
+//	for i, item := range items {
+//		itemTable := l.CreateTable(0, 6)
+//		itemTable.RawSetString("id", lua.LString(item.ID))
+//		itemTable.RawSetString("user_id", lua.LString(uid))
+//		itemTable.RawSetString("create_time", lua.LNumber(item.CreateTime))
+//		itemTable.RawSetString("update_time", lua.LNumber(item.UpdateTime))
+//
+//		changesetTable := RuntimeLuaConvertMap(l, item.Changeset)
+//		itemTable.RawSetString("changeset", changesetTable)
+//
+//		metadataTable := RuntimeLuaConvertMap(l, item.Metadata)
+//		itemTable.RawSetString("metadata", metadataTable)
+//
+//		itemsTable.RawSetInt(i+1, itemTable)
+//	}
+//
+//	l.Push(itemsTable)
+//	l.Push(lua.LString(newCursor))
+//
+//	return 2
+//}
 
 func (n *RuntimeLuaNakamaModule) storageList(l *lua.LState) int {
 	//userIDString := l.OptString(1, "")
